@@ -23,6 +23,7 @@ interface Complaint {
   status: string | null
   created_at: string
   ward_id: number | null
+  citizen_escalated?: boolean
   ward?: { name_ne: string; municipality: string } | null
 }
 
@@ -62,9 +63,12 @@ function fmtDate(iso: string) {
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function MyComplaintsPage() {
   const { citizen, loading: authLoading, openAuth } = useAuth()
-  const [complaints, setComplaints] = useState<Complaint[]>([])
-  const [loading,    setLoading]    = useState(false)
-  const [selected,   setSelected]   = useState<Complaint | null>(null)
+  const [complaints,    setComplaints]    = useState<Complaint[]>([])
+  const [loading,       setLoading]       = useState(false)
+  const [selected,      setSelected]      = useState<Complaint | null>(null)
+  const [escalating,    setEscalating]    = useState<string | null>(null)
+  const [escalateDone,  setEscalateDone]  = useState<Set<string>>(new Set())
+  const [escalateError, setEscalateError] = useState<string | null>(null)
 
   useEffect(() => {
     if (!citizen) return
@@ -79,6 +83,34 @@ export default function MyComplaintsPage() {
         setLoading(false)
       })
   }, [citizen])
+
+  const handleEscalate = async (c: Complaint, e: React.MouseEvent) => {
+    e.stopPropagation()
+    const key = c.tracking_code ?? c.id
+    setEscalating(key)
+    setEscalateError(null)
+    try {
+      const res = await fetch(`/api/complaints/${key}/escalate`, { method: 'POST' })
+      if (res.ok) {
+        setEscalateDone(prev => new Set([...prev, key]))
+        setComplaints(prev => prev.map(x =>
+          x.id === c.id ? { ...x, status: 'escalated', citizen_escalated: true } : x
+        ))
+      } else {
+        const d = await res.json()
+        if (d.error === 'already_escalated') {
+          setEscalateDone(prev => new Set([...prev, key]))
+        } else if (d.error === 'already_resolved') {
+          setEscalateError('यो उजुरी पहिले नै समाधान भइसकेको छ।')
+        } else {
+          setEscalateError('केही गडबडी भयो। पुनः प्रयास गर्नुहोस्।')
+        }
+      }
+    } catch {
+      setEscalateError('नेटवर्क त्रुटि। पुनः प्रयास गर्नुहोस्।')
+    }
+    setEscalating(null)
+  }
 
   // ── Not logged in ─────────────────────────────────────────────────────────
   if (!authLoading && !citizen) return (
@@ -211,13 +243,42 @@ export default function MyComplaintsPage() {
                         <DetailItem label="ट्र्याकिङ कोड" value={c.tracking_code ?? '—'} mono />
                         <DetailItem label="दर्ता मिति" value={fmtDate(c.created_at)} />
                       </div>
-                      <Link
-                        href={`/track?code=${c.tracking_code}`}
-                        style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: GOV_BLUE, textDecoration: 'none', fontFamily: DEV }}
-                      >
-                        पूर्ण विवरण हेर्नुहोस्
-                        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-                      </Link>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                        <Link
+                          href={`/track?code=${c.tracking_code}`}
+                          style={{ display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 600, color: GOV_BLUE, textDecoration: 'none', fontFamily: DEV }}
+                        >
+                          पूर्ण विवरण हेर्नुहोस्
+                          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                        </Link>
+
+                        {/* Escalate button — only if not resolved and not already escalated */}
+                        {c.status !== 'resolved' && !c.citizen_escalated && !escalateDone.has(c.tracking_code ?? c.id) && (
+                          <EscalateButton
+                            loading={escalating === (c.tracking_code ?? c.id)}
+                            onClick={e => handleEscalate(c, e)}
+                          />
+                        )}
+
+                        {/* Already escalated badge */}
+                        {(c.citizen_escalated || escalateDone.has(c.tracking_code ?? c.id)) && (
+                          <span style={{
+                            display: 'inline-flex', alignItems: 'center', gap: 5,
+                            fontSize: 11, fontWeight: 700, fontFamily: DEV,
+                            background: '#FEF2F2', color: CRIMSON,
+                            border: `1px solid ${CRIMSON}30`, borderRadius: 20,
+                            padding: '4px 12px',
+                          }}>
+                            <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>
+                            मन्त्रालयमा पठाइयो
+                          </span>
+                        )}
+                      </div>
+
+                      {escalateError && (
+                        <p style={{ fontSize: 12, color: CRIMSON, marginTop: 8, fontFamily: DEV }}>{escalateError}</p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -262,5 +323,33 @@ function DetailItem({ label, value, mono = false }: { label: string; value: stri
       <p style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 3px', fontFamily: 'system-ui' }}>{label}</p>
       <p style={{ fontSize: 13, fontWeight: 600, color: '#111827', margin: 0, fontFamily: mono ? 'monospace' : DEV }}>{value}</p>
     </div>
+  )
+}
+
+function EscalateButton({ loading, onClick }: { loading: boolean; onClick: (e: React.MouseEvent) => void }) {
+  const [hover, setHover] = useState(false)
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      style={{
+        display: 'inline-flex', alignItems: 'center', gap: 6,
+        fontSize: 12, fontWeight: 700, fontFamily: DEV,
+        background: hover && !loading ? '#FEF2F2' : '#fff',
+        color: CRIMSON,
+        border: `1.5px solid ${CRIMSON}`,
+        borderRadius: 20, padding: '5px 14px',
+        cursor: loading ? 'not-allowed' : 'pointer',
+        opacity: loading ? 0.7 : 1,
+        transition: 'background 0.15s',
+      }}
+    >
+      {loading
+        ? <><div style={{ width: 11, height: 11, border: `2px solid ${CRIMSON}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />पठाउँदैछ...</>
+        : <><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/></svg>वडाले नसुनेकाे — मन्त्रालयमा पठाउनुहोस्</>
+      }
+    </button>
   )
 }

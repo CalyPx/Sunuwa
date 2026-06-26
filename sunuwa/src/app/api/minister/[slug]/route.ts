@@ -54,11 +54,21 @@ export async function GET(
 
   const { data: complaints } = await supabaseAdmin
     .from('complaints')
-    .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, ward:wards(name_ne, municipality)')
+    .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, citizen_escalated, citizen_escalated_at, ward:wards(id, name_ne, municipality)')
     .or(`ministry_id.eq.${ministry.id},category_en.in.(${matchingCategories.map(c => `"${c}"`).join(',')})`)
     .order('severity', { ascending: false })
     .order('created_at', { ascending: false })
     .limit(100)
+
+  // Citizen-escalated complaints (all categories for this ministry)
+  const { data: citizenEscalated } = await supabaseAdmin
+    .from('complaints')
+    .select('id, category_en, category_ne, severity, summary_ne, status, created_at, text, citizen_escalated_at, ward:wards(id, name_ne, municipality)')
+    .or(`ministry_id.eq.${ministry.id},category_en.in.(${matchingCategories.map(c => `"${c}"`).join(',')})`)
+    .eq('citizen_escalated', true)
+    .neq('status', 'resolved')
+    .order('citizen_escalated_at', { ascending: false })
+    .limit(50)
 
   const list = complaints || []
   const clList = clusters || []
@@ -82,11 +92,37 @@ export async function GET(
   const criticalCount  = enriched.filter(c => (c.severity || 0) >= 8).length
   const escalatedCount = enriched.filter(c => (c.escalation_level || 1) >= 3).length
 
+  // Group citizen escalations by ward for the minister's "chain of command" view
+  const ceList = citizenEscalated || []
+  const wardEscalations: Record<string, { wardName: string; municipality: string; count: number; complaints: typeof ceList }> = {}
+  for (const c of ceList) {
+    const wid = c.ward?.id ?? 'unknown'
+    if (!wardEscalations[wid]) {
+      wardEscalations[wid] = {
+        wardName:     c.ward?.name_ne ?? 'अज्ञात वडा',
+        municipality: c.ward?.municipality ?? '',
+        count:        0,
+        complaints:   [],
+      }
+    }
+    wardEscalations[wid].count++
+    wardEscalations[wid].complaints.push(c)
+  }
+
   return NextResponse.json({
     ministry,
     brief: brief || null,
     clusters: clList,
     complaints: enriched,
-    stats: { totalComplaints, avgSev, criticalCount, escalatedCount, activeClusters: clList.length },
+    citizenEscalations: ceList,
+    wardEscalations: Object.values(wardEscalations).sort((a, b) => b.count - a.count),
+    stats: {
+      totalComplaints,
+      avgSev,
+      criticalCount,
+      escalatedCount,
+      activeClusters: clList.length,
+      citizenEscalatedCount: ceList.length,
+    },
   })
 }

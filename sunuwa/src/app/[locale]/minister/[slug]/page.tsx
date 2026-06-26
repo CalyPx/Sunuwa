@@ -28,7 +28,9 @@ interface Cluster {
 }
 interface Ministry { id: number; name: string; name_ne: string; slug: string }
 interface Brief { content_ne: string; content_en: string; generated_at: string }
-interface Stats { totalComplaints: number; avgSev: number; criticalCount: number; escalatedCount: number; activeClusters: number }
+interface Stats { totalComplaints: number; avgSev: number; criticalCount: number; escalatedCount: number; activeClusters: number; citizenEscalatedCount?: number }
+interface CitizenEscComplaint { id: string; category_en: string; category_ne: string; severity: number; summary_ne: string; text: string; status: string; created_at: string; citizen_escalated_at: string; ward: { name_ne: string; municipality: string } | null }
+interface WardEscalation { wardName: string; municipality: string; count: number; complaints: CitizenEscComplaint[] }
 
 // SLA thresholds per category (ward-level days before escalation)
 const SLA: Record<string, number> = {
@@ -159,6 +161,58 @@ Teacher absenteeism and textbook shortages are the dominant complaints under the
 ## Predicted Escalations
 - Complaint volume expected to spike during exam season`,
   },
+  'energy-water': {
+    ne: `## Current Situation
+ऊर्जा तथा जलस्रोत मन्त्रालय अन्तर्गत खानेपानी आपूर्ति र बिजुली कटौतीसम्बन्धी उजुरी यस हप्ता उल्लेखनीय रूपमा बढेका छन्। काठमाडौं, ललितपुर र भक्तपुर क्षेत्रमा पानीको दबाब कम भएको र नियमित कटौतीको गुनासो वडा कार्यालयहरूमा थुप्रिएको छ।
+
+## Emerging Risks
+- काठमाडौं महानगरपालिका वडा ५, ७ र १२ मा पाइपलाइन चुहावटका कारण पानी आपूर्ति बाधित
+- नेपाल विद्युत प्राधिकरणको ट्रान्सफर्मर खराब हुँदा भरतपुर र पोखरामा लोडसेडिङ बढेको
+- मनसुन पूर्व पानी सञ्चय प्रणाली कमजोर — वर्षा कमी हुँदा आपूर्ति थप घट्ने जोखिम
+- ग्रामीण जलस्रोत परियोजनाको निर्माण ३ महिनाभन्दा बढी ढिलो भएको, नागरिकको दैनिक जीवन प्रभावित
+
+## Affected Areas
+- काठमाडौं महानगरपालिका: खानेपानी उजुरी सर्वाधिक (वडा ५, ७, ९, १२)
+- भरतपुर महानगरपालिका: बिजुली ट्रान्सफर्मर फेल भएका वडाहरू
+- पोखरा महानगरपालिका: बिजुली कटौती र खानेपानी दबाब कमी एकैसाथ
+- नेपालगञ्ज उपमहानगरपालिका: ग्रिड निरीक्षण सिफारिस गरिएको
+
+## Recommended Actions
+- KUKL (काठमाडौं उपत्यका खानेपानी लिमिटेड) लाई वडा ५, ७ र १२ मा तत्काल पाइपलाइन मर्मत गर्न निर्देशन दिनुहोस्
+- NEA लाई भरतपुर र नेपालगञ्जका खराब ट्रान्सफर्मर ७२ घण्टाभित्र बदल्न आदेश दिनुहोस्
+- ग्रामीण जलस्रोत परियोजनाको अनुगमन समिति गठन गरी मासिक प्रगति प्रतिवेदन लिनुहोस्
+- मनसुनको तयारीस्वरूप जलाशय सफाइ र पाइपलाइन निरीक्षण अभियान सुरु गर्नुहोस्
+
+## Predicted Escalations
+- काठमाडौंका ३ वडामा SLA समयसीमा नाघेका उजुरी प्रदेश स्तरमा जाने सम्भावना छ
+- मनसुन अघि मर्मत नभएमा वर्षाको समयमा पाइपलाइन क्षति बढ्ने र उजुरी दोब्बर हुने अनुमान
+- नागरिकले सिधै मन्त्रालयमा escalate गरेका उजुरीहरूमा तत्काल ध्यान दिन आवश्यक`,
+    en: `## Current Situation
+Water supply and electricity complaints under the Ministry of Energy, Water Resources and Irrigation have surged notably this week. Kathmandu, Lalitpur and Bhaktapur are reporting low water pressure and scheduled power cuts piling up at ward offices.
+
+## Emerging Risks
+- Pipeline leaks in KMC Wards 5, 7 and 12 disrupting supply to thousands of households
+- Failed NEA transformers increasing load-shedding in Bharatpur and Pokhara
+- Pre-monsoon reservoir levels critically low — supply may drop further if rainfall is delayed
+- Rural water project construction delayed 3+ months, directly impacting daily life
+
+## Affected Areas
+- Kathmandu Metropolitan City: highest water complaint volume (Wards 5, 7, 9, 12)
+- Bharatpur Metropolitan City: multiple transformer failures
+- Pokhara Metropolitan City: simultaneous electricity cuts and water pressure drop
+- Nepalgunj Sub-Metropolitan City: grid inspection recommended
+
+## Recommended Actions
+- Direct KUKL to begin emergency pipeline repair in KMC Wards 5, 7 and 12 immediately
+- Order NEA to replace failed transformers in Bharatpur and Nepalgunj within 72 hours
+- Form monitoring committee for rural water projects with mandatory monthly progress reports
+- Launch pre-monsoon reservoir cleaning and pipeline inspection campaign this week
+
+## Predicted Escalations
+- 3 Kathmandu wards have SLA-breached complaints likely to escalate to province level
+- If repairs are not completed before monsoon, pipeline damage and complaint volume expected to double
+- Citizen-escalated complaints forwarded directly to ministry require immediate action`,
+  },
 }
 
 function isGenericBrief(text: string): boolean {
@@ -187,11 +241,12 @@ export default function MinisterDashboard() {
   const router = useRouter()
   const slug   = params.slug as string
 
-  const [ministry,    setMinistry]    = useState<Ministry | null>(null)
-  const [brief,       setBrief]       = useState<Brief | null>(null)
-  const [complaints,  setComplaints]  = useState<Complaint[]>([])
-  const [clusters,    setClusters]    = useState<Cluster[]>([])
-  const [stats,       setStats]       = useState<Stats | null>(null)
+  const [ministry,          setMinistry]          = useState<Ministry | null>(null)
+  const [brief,             setBrief]             = useState<Brief | null>(null)
+  const [complaints,        setComplaints]        = useState<Complaint[]>([])
+  const [clusters,          setClusters]          = useState<Cluster[]>([])
+  const [stats,             setStats]             = useState<Stats | null>(null)
+  const [wardEscalations,   setWardEscalations]   = useState<WardEscalation[]>([])
   const [loading,     setLoading]     = useState(true)
   const [briefLang,   setBriefLang]   = useState<'ne'|'en'>('ne')
   const [generating,  setGenerating]  = useState(false)
@@ -224,6 +279,7 @@ export default function MinisterDashboard() {
         setComplaints(d.complaints || [])
         setClusters(d.clusters || [])
         setStats(d.stats)
+        setWardEscalations(d.wardEscalations || [])
         setLastUpdated(new Date())
         setLoading(false)
       })
@@ -465,7 +521,7 @@ export default function MinisterDashboard() {
         <div style={{ width: 32, height: 32, border: `2px solid ${GOV_BLUE}`, borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 12px' }} />
         <p style={{ fontSize: 13, color: '#9CA3AF', fontFamily: 'Noto Sans Devanagari, sans-serif' }}>लोड हुँदैछ...</p>
       </div>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}}`}</style>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}} @keyframes blink{0%,100%{opacity:1}50%{opacity:.4}} @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(1.4)}}`}</style>
     </div>
   )
 
@@ -751,7 +807,35 @@ export default function MinisterDashboard() {
               </div>
             </div>
 
-            {/* SECTION 7: Issue Explorer */}
+            {/* SECTION 7: Citizen Escalations — Chain of Command */}
+            {wardEscalations.length > 0 && (
+              <div style={{ border: `1px solid ${CRIMSON}40`, background: '#fff' }}>
+                {/* Header */}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 18px', background: `linear-gradient(135deg, ${CRIMSON} 0%, #9B1120 100%)` }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#FCA5A5', animation: 'pulse 1.8s ease-in-out infinite' }} />
+                    <span style={{ fontSize: 12, fontWeight: 800, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                      नागरिक उजुरी — वडाले नसुनेको
+                    </span>
+                    <span style={{ fontSize: 10, fontWeight: 700, background: 'rgba(255,255,255,0.2)', color: '#fff', padding: '2px 8px', borderRadius: 12 }}>
+                      {wardEscalations.reduce((s, w) => s + w.count, 0)} उजुरी
+                    </span>
+                  </div>
+                  <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)' }}>
+                    नागरिकले आफैं मन्त्रालयमा पठाएका — तत्काल कारबाही आवश्यक
+                  </span>
+                </div>
+
+                {/* Ward cards */}
+                <div style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {wardEscalations.map((ward, wi) => (
+                    <WardEscalationCard key={wi} ward={ward} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 8: Issue Explorer (was 7) */}
             <div style={{ border: `1px solid ${MID_GRAY}`, background: '#fff' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', background: GOV_BLUE }}>
                 <span style={{ fontSize: 11, fontWeight: 700, color: '#fff', textTransform: 'uppercase', letterSpacing: '0.1em' }}>
@@ -1023,6 +1107,88 @@ export default function MinisterDashboard() {
           </div>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ── Ward Escalation Card ────────────────────────────────────────────────────
+function WardEscalationCard({ ward }: { ward: { wardName: string; municipality: string; count: number; complaints: { id: string; category_en: string; category_ne: string; severity: number; summary_ne: string; text: string; status: string; created_at: string; citizen_escalated_at: string; ward: { name_ne: string; municipality: string } | null }[] } }) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div style={{ border: `1px solid ${CRIMSON}25`, borderRadius: 8, overflow: 'hidden' }}>
+      {/* Ward row header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '12px 16px', background: open ? '#FEF2F2' : '#fff',
+          border: 'none', cursor: 'pointer', textAlign: 'left', transition: 'background 0.15s',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Urgency dot */}
+          <div style={{
+            width: 10, height: 10, borderRadius: '50%', flexShrink: 0,
+            background: ward.count >= 5 ? CRIMSON : ward.count >= 3 ? ORANGE : WARNING,
+          }} />
+          <div>
+            <p style={{ fontSize: 13, fontWeight: 800, color: '#111827', margin: 0, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
+              {ward.wardName}
+            </p>
+            <p style={{ fontSize: 11, color: '#6B7280', margin: '2px 0 0' }}>{ward.municipality}</p>
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{
+            fontSize: 11, fontWeight: 700, padding: '3px 10px', borderRadius: 20,
+            background: '#FEE2E2', color: CRIMSON, border: `1px solid ${CRIMSON}30`,
+          }}>
+            {ward.count} नागरिक उजुरी
+          </span>
+          <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="#9CA3AF" strokeWidth={2}
+            style={{ transform: open ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </button>
+
+      {/* Complaint list */}
+      {open && (
+        <div style={{ borderTop: `1px solid ${CRIMSON}20` }}>
+          {ward.complaints.map((c, i) => {
+            const daysAgo = Math.floor((Date.now() - new Date(c.citizen_escalated_at || c.created_at).getTime()) / 86400000)
+            return (
+              <div key={c.id} style={{
+                padding: '10px 16px',
+                borderBottom: i < ward.complaints.length - 1 ? `1px solid #F3F4F6` : 'none',
+                background: '#FFFAFA',
+                display: 'flex', alignItems: 'flex-start', gap: 12,
+              }}>
+                {/* Severity pill */}
+                <span style={{
+                  fontSize: 10, fontWeight: 800, padding: '2px 7px', borderRadius: 4, flexShrink: 0, marginTop: 1,
+                  background: c.severity >= 8 ? '#FEE2E2' : c.severity >= 5 ? '#FEF3C7' : '#F0FDF4',
+                  color: c.severity >= 8 ? CRIMSON : c.severity >= 5 ? WARNING : SUCCESS,
+                }}>
+                  {c.severity}/10
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, fontWeight: 600, color: '#111827', margin: 0, fontFamily: 'Noto Sans Devanagari, sans-serif', lineHeight: 1.5 }}>
+                    {c.summary_ne || c.text?.slice(0, 100) || '—'}
+                  </p>
+                  <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
+                    <span style={{ fontSize: 10, color: '#9CA3AF', fontFamily: 'Noto Sans Devanagari, sans-serif' }}>{c.category_ne || c.category_en}</span>
+                    <span style={{ fontSize: 10, color: CRIMSON, fontWeight: 600 }}>
+                      {daysAgo === 0 ? 'आज' : `${daysAgo} दिन`} अगाडि escalate गरियो
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
     </div>
   )
 }
