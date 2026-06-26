@@ -1,0 +1,14 @@
+fastapi
+uvicorn
+python-dotenv
+sentence-transformers
+umap-learn
+hdbscan
+numpy
+scikit-learn
+feedparser
+google-generativeai
+groq
+supabase
+httpx
+beautifulsoup4

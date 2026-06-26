@@ -1,0 +1,97 @@
+{
+  "nav": {
+    "submit": "Submit Complaint",
+    "map": "Map",
+    "about": "About",
+    "login": "Login"
+  },
+  "home": {
+    "title": "Sunuwa",
+    "tagline": "Citizens' Voice, Reaching Government",
+    "description": "Nepal's first civic intelligence platform. Your complaint is analyzed by AI and routed to the right government authority.",
+    "submit_cta": "Submit a Complaint",
+    "map_cta": "View Map",
+    "stat_complaints": "Complaints",
+    "stat_wards": "Wards",
+    "stat_ministries": "Ministries",
+    "how_title": "How it works",
+    "step1_title": "Submit",
+    "step1_desc": "Write your complaint in Nepali or English",
+    "step2_title": "AI Analysis",
+    "step2_desc": "AI classifies and routes it to the right authority",
+    "step3_title": "Government Action",
+    "step3_desc": "Ministers see your voice in their daily intelligence brief"
+  },
+  "submit": {
+    "title": "Submit Your Complaint",
+    "subtitle": "Write in Nepali or English — AI understands both",
+    "placeholder": "Describe your complaint in detail...\n\nExample: The road in our ward has been broken for months and nobody has repaired it.",
+    "ward_label": "Select Your Ward",
+    "ward_placeholder": "Search ward...",
+    "submit_btn": "Submit Complaint",
+    "submitting": "Submitting...",
+    "success_title": "Complaint Received!",
+    "success_body": "Your complaint will be analyzed by AI and forwarded to the relevant authority.",
+    "success_id": "Complaint ID",
+    "submit_another": "Submit Another",
+    "error_short": "Please write at least 10 characters",
+    "error_ward": "Please select your ward",
+    "error_submit": "Failed to submit. Please try again.",
+    "chars_remaining": "characters remaining"
+  },
+  "map": {
+    "title": "Citizen Complaint Map",
+    "subtitle": "Real-time view of complaints across Nepal",
+    "legend_low": "Low",
+    "legend_high": "High",
+    "cluster_complaints": "complaints",
+    "cluster_urgency": "Urgency",
+    "escalation_label": "Level",
+    "no_clusters": "No complaint clusters yet",
+    "loading": "Loading map..."
+  },
+  "categories": {
+    "Education": "Education",
+    "Infrastructure": "Infrastructure",
+    "Health": "Health",
+    "Water": "Water",
+    "Electricity": "Electricity",
+    "Corruption": "Corruption",
+    "Safety": "Safety",
+    "Environment": "Environment",
+    "Other": "Other"
+  },
+  "escalation": {
+    "1": "Ward Level",
+    "2": "Municipality Level",
+    "3": "Province Level",
+    "4": "Federal Ministry Level"
+  },
+  "ward": {
+    "title": "Ward Dashboard",
+    "complaints_tab": "Complaints",
+    "clusters_tab": "Clusters",
+    "alerts_tab": "Alerts",
+    "status_pending": "Pending",
+    "status_active": "Active",
+    "status_resolved": "Resolved",
+    "mark_resolved": "Mark Resolved",
+    "escalated_to": "This cluster has escalated to",
+    "escalated_suffix": ""
+  },
+  "minister": {
+    "title": "Minister Dashboard",
+    "brief_title": "Today's Intelligence Brief",
+    "generated_at": "Generated at",
+    "no_brief": "No brief generated yet for today",
+    "active_clusters": "Active Clusters",
+    "total_complaints": "Total Complaints",
+    "top_issues": "Top Issues"
+  },
+  "common": {
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try Again",
+    "back": "Go Back"
+  }
+}

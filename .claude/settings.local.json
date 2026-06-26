@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(gh api *)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(ls \"C:\\\\Users\\\\Gaming F16\\\\.claude\\\\skills\" 2>/dev/null || echo \"Directory does not exist\")",
+      "WebFetch(domain:github.com)"
+    ]
+  }
+}

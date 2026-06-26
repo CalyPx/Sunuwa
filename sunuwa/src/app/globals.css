@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+/* ── Sunuwa Design Tokens ─────────────────────────────────────────── */
+:root {
+  --s-green:    #1B4332;   /* primary — deep forest green */
+  --s-green-h:  #143728;   /* hover */
+  --s-bg:       #F5F0E8;   /* page background — warm off-white */
+  --s-saffron:  #E8A020;   /* accent */
+  --s-danger:   #C0392B;   /* danger / urgent */
+  --s-text:     #1A1A1A;   /* body text */
+  --s-muted:    #5C5C5C;   /* secondary text */
+  --s-border:   #DDD8CE;   /* border on warm bg */
+  --s-card:     #FFFFFF;
+}
+
+@layer base {
+  * { box-sizing: border-box; }
+  html { font-family: 'Mukta', 'Noto Sans Devanagari', sans-serif; }
+  body {
+    background: var(--s-bg);
+    color: var(--s-text);
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* ── Leaflet baseline (needed for map components) ─────────────────── */
+.leaflet-container { font-family: inherit; }

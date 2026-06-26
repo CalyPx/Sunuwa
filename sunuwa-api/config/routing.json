@@ -1,0 +1,74 @@
+{
+  "Education": {
+    "ministry_slug": "education",
+    "ministry_id_placeholder": 1,
+    "ministry_ne": "शिक्षा तथा खेलकुद मन्त्रालय",
+    "department": "शिक्षा विभाग",
+    "keywords_ne": ["विद्यालय", "शिक्षक", "परीक्षा", "NEB", "SLC", "छात्रवृत्ति", "कक्षा", "विश्वविद्यालय"],
+    "keywords_en": ["school", "teacher", "exam", "NEB", "scholarship", "class", "university", "education"]
+  },
+  "Infrastructure": {
+    "ministry_slug": "infrastructure",
+    "ministry_id_placeholder": 2,
+    "ministry_ne": "भौतिक पूर्वाधार विकास मन्त्रालय",
+    "department": "सडक विभाग",
+    "keywords_ne": ["सडक", "बाटो", "पुल", "भवन", "खाडल", "निर्माण", "यातायात"],
+    "keywords_en": ["road", "bridge", "building", "pothole", "construction", "footpath", "transport"]
+  },
+  "Health": {
+    "ministry_slug": "health",
+    "ministry_id_placeholder": 3,
+    "ministry_ne": "स्वास्थ्य तथा खाद्य सुरक्षा मन्त्रालय",
+    "department": "स्वास्थ्य सेवा विभाग",
+    "keywords_ne": ["अस्पताल", "औषधि", "डाक्टर", "स्वास्थ्य", "उपचार", "स्वास्थ्य चौकी"],
+    "keywords_en": ["hospital", "medicine", "doctor", "health", "treatment", "clinic", "nurse"]
+  },
+  "Water": {
+    "ministry_slug": "energy-water",
+    "ministry_id_placeholder": 4,
+    "ministry_ne": "ऊर्जा, जलस्रोत तथा सिंचाइ मन्त्रालय",
+    "department": "खानेपानी तथा ढल व्यवस्थापन विभाग",
+    "keywords_ne": ["पानी", "धारा", "खानेपानी", "ढल", "पाइप", "KUKL"],
+    "keywords_en": ["water", "pipe", "supply", "KUKL", "drainage", "sewage", "tap"]
+  },
+  "Electricity": {
+    "ministry_slug": "energy-water",
+    "ministry_id_placeholder": 4,
+    "ministry_ne": "ऊर्जा, जलस्रोत तथा सिंचाइ मन्त्रालय",
+    "department": "नेपाल विद्युत प्राधिकरण (NEA)",
+    "keywords_ne": ["बिजुली", "NEA", "लोडसेडिङ", "तार", "ट्रान्सफर्मर", "मिटर"],
+    "keywords_en": ["electricity", "NEA", "power", "transformer", "meter", "outage", "wire"]
+  },
+  "Corruption": {
+    "ministry_slug": "ciaa",
+    "ministry_id_placeholder": 7,
+    "ministry_ne": "अख्तियार दुरूपयोग अनुसन्धान आयोग",
+    "department": "CIAA क्षेत्रीय कार्यालय",
+    "keywords_ne": ["घूस", "भ्रष्टाचार", "रिसवत", "ठगी", "दुरूपयोग"],
+    "keywords_en": ["bribe", "corruption", "fraud", "misuse", "embezzlement", "scam"]
+  },
+  "Safety": {
+    "ministry_slug": "home-affairs",
+    "ministry_id_placeholder": 5,
+    "ministry_ne": "गृह मन्त्रालय",
+    "department": "नेपाल प्रहरी",
+    "keywords_ne": ["प्रहरी", "सुरक्षा", "चोरी", "हिंसा", "दुर्घटना", "आगलागी"],
+    "keywords_en": ["police", "security", "theft", "violence", "accident", "fire", "crime"]
+  },
+  "Environment": {
+    "ministry_slug": "environment",
+    "ministry_id_placeholder": 6,
+    "ministry_ne": "कृषि, वन तथा वातावरण मन्त्रालय",
+    "department": "वातावरण विभाग",
+    "keywords_ne": ["फोहोर", "प्रदूषण", "जंगल", "वायु", "वातावरण", "फोहोरमैला"],
+    "keywords_en": ["garbage", "pollution", "forest", "air quality", "waste", "environment"]
+  },
+  "Other": {
+    "ministry_slug": "home-affairs",
+    "ministry_id_placeholder": 5,
+    "ministry_ne": "गृह मन्त्रालय",
+    "department": "सामान्य प्रशासन",
+    "keywords_ne": [],
+    "keywords_en": []
+  }
+}
