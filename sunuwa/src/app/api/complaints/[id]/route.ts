@@ -8,28 +8,27 @@ export async function GET(
   const { id } = await params
   const raw = id.trim().toUpperCase()
 
-  // 1. Try tracking_code first (short code like KTM-16-A7B)
-  let query = supabaseAdmin
+  const SELECT = 'id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, lat, lng, followup_data, tracking_code, officer_notes, referred_to, ward:wards(name_ne, municipality)'
+
+  // 1. Try exact tracking_code match first (e.g. KTM-16-A7B)
+  const { data: rows1 } = await supabaseAdmin
     .from('complaints')
-    .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, lat, lng, followup_data, tracking_code, officer_notes, referred_to, ward:wards(name_ne, municipality)')
+    .select(SELECT)
     .ilike('tracking_code', raw)
     .limit(1)
 
-  let { data: complaint, error } = await query
+  let complaint = rows1?.[0] ?? null
 
   // 2. Fall back to UUID prefix search only if input looks like a UUID fragment (8+ hex chars)
-  if (!complaint || error) {
+  if (!complaint) {
     const uuidSearch = id.toLowerCase().replace(/[^a-f0-9-]/g, '')
     if (uuidSearch.length >= 8) {
-      const res2 = await supabaseAdmin
+      const { data: rows2 } = await supabaseAdmin
         .from('complaints')
-        .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, lat, lng, followup_data, tracking_code, officer_notes, referred_to, ward:wards(name_ne, municipality)')
+        .select(SELECT)
         .filter('id::text', 'ilike', `${uuidSearch}%`)
         .limit(1)
-      complaint = res2.data?.[0] ?? null
-      error = res2.error
-    } else {
-      complaint = null
+      complaint = rows2?.[0] ?? null
     }
   }
 
