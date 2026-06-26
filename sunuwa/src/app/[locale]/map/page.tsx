@@ -272,7 +272,7 @@ export default function PublicMapPage() {
                   स
                 </div>
               </div>
-              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
             </Link>
             <div className="hidden md:flex items-center gap-1 text-white/40">
               <span>/</span>

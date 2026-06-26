@@ -17,16 +17,20 @@ export async function GET(
 
   let { data: complaint, error } = await query
 
-  // 2. Fall back to UUID prefix search if not found by tracking_code
+  // 2. Fall back to UUID prefix search only if input looks like a UUID fragment (8+ hex chars)
   if (!complaint || error) {
     const uuidSearch = id.toLowerCase().replace(/[^a-f0-9-]/g, '')
-    const res2 = await supabaseAdmin
-      .from('complaints')
-      .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, lat, lng, followup_data, tracking_code, officer_notes, referred_to, ward:wards(name_ne, municipality)')
-      .filter('id::text', 'ilike', `${uuidSearch}%`)
-      .limit(1)
-    complaint = res2.data?.[0] ?? null
-    error = res2.error
+    if (uuidSearch.length >= 8) {
+      const res2 = await supabaseAdmin
+        .from('complaints')
+        .select('id, category_en, category_ne, severity, summary_ne, status, created_at, escalation_level, lat, lng, followup_data, tracking_code, officer_notes, referred_to, ward:wards(name_ne, municipality)')
+        .filter('id::text', 'ilike', `${uuidSearch}%`)
+        .limit(1)
+      complaint = res2.data?.[0] ?? null
+      error = res2.error
+    } else {
+      complaint = null
+    }
   }
 
   if (!complaint) return NextResponse.json({ error: 'not_found' }, { status: 404 })

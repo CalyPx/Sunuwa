@@ -4,19 +4,41 @@ import { useState, useEffect, useRef } from 'react'
 import { Link } from '@/i18n/navigation'
 import dynamic from 'next/dynamic'
 import { useAuth } from '@/components/AuthContext'
+import SunuwaLogo from '@/components/SunuwaLogo'
 
 const LocationPicker = dynamic(() => import('@/components/LocationPicker'), { ssr: false })
 
 const FOLLOWUP: Record<string, { id: string; label: string; label_ne: string; type: 'text' | 'select' | 'textarea'; options?: string[] }[]> = {
   Infrastructure: [
     { id: 'location',   label: 'Exact location / road name',          label_ne: 'सडकको नाम वा ठाउँ',       type: 'text' },
-    { id: 'issue_type', label: 'Type of problem',                      label_ne: 'समस्याको किसिम',           type: 'select', options: ['खाल्डो/खाडल', 'भत्केको सडक', 'पुल समस्या', 'नाली समस्या', 'अन्य'] },
+    { id: 'issue_type', label: 'Type of problem',                      label_ne: 'समस्याको किसिम',           type: 'select', options: [
+'खाल्डो/खाडल',
+'भत्केको सडक',
+'पुल समस्या',
+'नाली समस्या',
+'ट्राफिक लाइट समस्या',
+'सडक बत्ती समस्या',
+'सडक संकेत समस्या',
+'फुटपाथ समस्या',
+'पार्किङ समस्या',
+'सार्वजनिक संरचना',
+'अन्य'
+] },
     { id: 'duration',   label: 'How long has this been a problem?',    label_ne: 'कति समयदेखि?',            type: 'select', options: ['१ हप्ताभन्दा कम', '१–४ हप्ता', '१–३ महिना', '३ महिनाभन्दा बढी'] },
     { id: 'impact',     label: 'How many people are affected?',        label_ne: 'कति मान्छे प्रभावित?',    type: 'select', options: ['केही घर', 'एक टोल', 'पूरै वडा', 'धेरै वडाहरू'] },
   ],
   Health: [
     { id: 'facility',   label: 'Hospital / health post name',          label_ne: 'अस्पताल वा स्वास्थ्य चौकीको नाम', type: 'text' },
-    { id: 'issue_type', label: 'Type of issue',                        label_ne: 'समस्याको किसिम',           type: 'select', options: ['सरसफाई', 'कर्मचारी अनुपस्थित', 'औषधि अनुपलब्ध', 'उपकरण खराब', 'अन्य'] },
+    { id: 'issue_type', label: 'Type of issue',                        label_ne: 'समस्याको किसिम',           type: 'select', options: [
+'सरसफाई',
+'कर्मचारी अनुपस्थित',
+'औषधि अनुपलब्ध',
+'उपकरण खराब',
+'लामो लाइन',
+'सेवा ढिलो',
+'आपतकालीन सेवा',
+'अन्य'
+] },
     { id: 'frequency',  label: 'Is this a recurring issue?',           label_ne: 'के यो बारम्बार हुने समस्या हो?', type: 'select', options: ['पहिलो पटक', 'कहिलेकाहीँ', 'प्रायः', 'सधैँ'] },
   ],
   Education: [
@@ -32,7 +54,15 @@ const FOLLOWUP: Record<string, { id: string; label: string; label_ne: string; ty
   ],
   Electricity: [
     { id: 'area',       label: 'Affected area',                        label_ne: 'प्रभावित ठाउँ',           type: 'text' },
-    { id: 'issue_type', label: 'Type of issue',                        label_ne: 'समस्याको किसिम',           type: 'select', options: ['लोडसेडिङ', 'ट्रान्सफर्मर खराब', 'तार टुटेको', 'मिटर समस्या', 'अन्य'] },
+    { id: 'issue_type', label: 'Type of issue',                        label_ne: 'समस्याको किसिम',           type: 'select', options: [
+'लोडसेडिङ',
+'ट्रान्सफर्मर खराब',
+'तार टुटेको',
+'मिटर समस्या',
+'सडक बत्ती',
+'भोल्टेज समस्या',
+'अन्य'
+] },
     { id: 'duration',   label: 'Duration of outage',                   label_ne: 'कति समयदेखि?',            type: 'select', options: ['केही घण्टा', '१–३ दिन', '१ हप्ता', '१ हप्ताभन्दा बढी'] },
   ],
   Corruption: [
@@ -114,7 +144,7 @@ const CRIM = '#C8102E'
 const DEV = 'Noto Sans Devanagari, sans-serif'
 
 export default function SubmitPage() {
-  const { user } = useAuth()
+  const { citizen, openAuth } = useAuth()
   const [step,             setStep]             = useState<Step>('write')
   const [text,             setText]             = useState('')
   const [wardId,           setWardId]           = useState<number | null>(null)
@@ -241,7 +271,7 @@ export default function SubmitPage() {
           followup: { ...followupAnswers, categories: selectedCategories.join(',') },
           lat: pinLat,
           lng: pinLng,
-          ...(user ? { citizen_id: user.id } : {}),
+          ...(citizen ? { citizen_phone: citizen.phone_number } : {}),
         }),
       })
       const data = await res.json()
@@ -261,17 +291,42 @@ export default function SubmitPage() {
   const isWriteStep = step === 'write' || step === 'classify'
   const isFollowupStep = step === 'followup' || step === 'submitting'
 
+  // ── Auth gate ──────────────────────────────────────────────────────
+  if (!citizen) {
+    return (
+      <div style={{ minHeight: '100dvh', background: '#0B2D52', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: 24, gap: 20 }}>
+        <div style={{ textAlign: 'center', maxWidth: 360 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
+            <div style={{ width: 4, height: 40, background: '#C8102E' }} />
+            <div style={{ width: 4, height: 40, marginLeft: 3, background: '#003893' }} />
+          </div>
+          <h1 style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 24, fontWeight: 800, color: '#fff', margin: '0 0 10px' }}>
+            उजुरी दर्ता गर्न लग इन आवश्यक छ
+          </h1>
+          <p style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 14, color: 'rgba(255,255,255,0.6)', marginBottom: 28 }}>
+            आफ्नो उजुरी दर्ता गर्न र ट्र्याक गर्न पहिले लग इन गर्नुहोस्
+          </p>
+          <button
+            onClick={openAuth}
+            style={{ padding: '14px 32px', borderRadius: 12, border: 'none', background: 'linear-gradient(135deg, #0E4DA4 0%, #1565C0 100%)', color: '#fff', fontSize: 15, fontWeight: 700, cursor: 'pointer', fontFamily: 'Noto Sans Devanagari, sans-serif', width: '100%', marginBottom: 12 }}
+          >
+            लग इन गर्नुहोस् →
+          </button>
+          <Link href="/" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 13, color: 'rgba(255,255,255,0.45)', textDecoration: 'none' }}>
+            ← गृहपृष्ठमा फर्कनुहोस्
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   // ── NAVBAR (matches project pattern) ──────────────────────────────
   const Navbar = () => (
     <header style={{ background: NAV, borderBottom: `2px solid ${DEEP}`, position: 'sticky', top: 0, zIndex: 50 }}>
       <div style={{ maxWidth: 900, margin: '0 auto', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'center' }}>
-            <div style={{ width: 4, height: 28, background: CRIM }} />
-            <div style={{ width: 4, height: 28, marginLeft: 2, background: '#003893' }} />
-            <div style={{ width: 28, height: 28, marginLeft: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 12, fontFamily: DEV }}>स</div>
-          </div>
-          <span style={{ fontFamily: DEV, fontWeight: 700, fontSize: 14, color: '#fff' }}>सुनुवाइ</span>
+          <SunuwaLogo size={96} />
+          <span style={{ fontFamily: DEV, fontWeight: 700, fontSize: 14, color: '#fff' }}>सुनुवा</span>
         </Link>
 
         {/* Progress indicator */}
@@ -525,35 +580,7 @@ export default function SubmitPage() {
 
               {/* Bottom toolbar */}
               <div style={{ padding: '12px 24px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #F3F4F6' }}>
-                {/* Voice button */}
-                <button
-                  type="button"
-                  onClick={recording ? stopRecording : startRecording}
-                  disabled={transcribing}
-                  style={{
-                    display: 'flex', alignItems: 'center', gap: 8,
-                    background: recording ? '#FEF2F2' : transcribing ? '#F9FAFB' : '#F3F4F6',
-                    border: recording ? '1px solid #FECACA' : '1px solid #E5E7EB',
-                    borderRadius: 8, padding: '8px 14px', cursor: 'pointer',
-                    color: recording ? '#DC2626' : '#374151', fontSize: 13, fontWeight: 500,
-                    fontFamily: DEV, opacity: transcribing ? 0.6 : 1, transition: 'all 0.2s',
-                  }}>
-                  {transcribing ? (
-                    <div style={{ width: 16, height: 16, border: '2px solid #9CA3AF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                  ) : recording ? (
-                    <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 16 }}>
-                      {[3, 5, 4, 6, 3].map((h, i) => (
-                        <div key={i} style={{ width: 2, height: h * 2, background: '#DC2626', borderRadius: 1, transformOrigin: 'bottom', animation: `wave ${0.4 + i * 0.08}s ease-in-out infinite alternate` }} />
-                      ))}
-                    </div>
-                  ) : (
-                    <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                    </svg>
-                  )}
-                  {transcribing ? 'लेख्दैछ...' : recording ? 'रोक्नुहोस्' : 'आवाजबाट भन्नुहोस्'}
-                </button>
-
+                
                 {/* Char count */}
                 <span style={{ fontSize: 12, color: text.length > 800 ? '#D97706' : '#9CA3AF', fontVariantNumeric: 'tabular-nums' }}>
                   {text.length}/{MAX_CHARS}

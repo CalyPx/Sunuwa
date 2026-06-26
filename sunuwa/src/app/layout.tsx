@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 
 export const metadata: Metadata = {
-  title: 'सुनुवाइ — नागरिकको आवाज, सरकारसम्म',
+  title: 'सुनुवा — नागरिकको आवाज, सरकारसम्म',
   description: 'नेपालको पहिलो नागरिक-सरकार बुद्धिमत्ता प्रणाली। AI ले तपाईंको उजुरी सही निकायमा पुर्‍याउँछ।',
 }
 

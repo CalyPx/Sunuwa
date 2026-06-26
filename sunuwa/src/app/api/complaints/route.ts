@@ -39,7 +39,7 @@ function computeBaseSeverity(category_en: string, followup?: Record<string, stri
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { text, ward_id, category_en, category_ne, severity, summary_ne, lat, lng, followup, citizen_id } = body
+    const { text, ward_id, category_en, category_ne, severity, summary_ne, lat, lng, followup, citizen_phone } = body
 
     if (!text || text.trim().length < 10) {
       return NextResponse.json({ error: 'too_short' }, { status: 400 })
@@ -70,7 +70,7 @@ export async function POST(req: NextRequest) {
     if (lat)          insertData.lat            = Number(lat)
     if (lng)          insertData.lng            = Number(lng)
     if (followup)     insertData.followup_data  = followup
-    if (citizen_id)   insertData.citizen_id     = citizen_id
+    if (citizen_phone) insertData.citizen_phone  = citizen_phone
 
     const { data: complaint, error } = await supabaseAdmin
       .from('complaints')

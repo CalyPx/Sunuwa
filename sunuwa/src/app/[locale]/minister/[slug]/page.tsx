@@ -4,6 +4,8 @@ import { useEffect, useState, useMemo, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { getSessionAndRole, signOut } from '@/lib/auth'
+import SunuwaLogo from '@/components/SunuwaLogo'
+import LangToggle from '@/components/LangToggle'
 
 const GOV_BLUE = '#0B3C6F'
 const CRIMSON  = '#C8102E'
@@ -496,12 +498,8 @@ export default function MinisterDashboard() {
         <div style={{ maxWidth: 1400, margin: '0 auto', padding: '0 20px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
-              <div style={{ display: 'flex' }}>
-                <div style={{ width: 4, height: 28, background: CRIMSON }} />
-                <div style={{ width: 4, height: 28, marginLeft: 2, background: '#003893' }} />
-                <div style={{ width: 28, height: 28, marginLeft: 6, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, color: '#fff', fontSize: 12, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}>स</div>
-              </div>
-              <span style={{ fontWeight: 700, color: '#fff', fontSize: 14, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+              <SunuwaLogo size={32} />
+              <span style={{ fontWeight: 700, color: '#fff', fontSize: 14, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
             </Link>
             <span style={{ color: 'rgba(255,255,255,0.25)' }}>/</span>
             <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>Minister Dashboard</span>
@@ -509,6 +507,7 @@ export default function MinisterDashboard() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             {/* <Link href="/map"   style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>Map</Link>
             <Link href="/track" style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, textDecoration: 'none', fontWeight: 500 }}>Track</Link> */}
+            <LangToggle />
             <button onClick={handleSignOut} style={{ fontSize: 11, fontWeight: 700, padding: '5px 12px', border: '1px solid rgba(255,255,255,0.3)', color: 'rgba(255,255,255,0.7)', background: 'transparent', cursor: 'pointer' }}>
               लगआउट
             </button>

@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { Link } from '@/i18n/navigation'
+import LangToggle from '@/components/LangToggle'
+import SunuwaLogo from '@/components/SunuwaLogo'
 
 // ── Palette ──────────────────────────────────────────────────────────
 const GOV_BLUE = '#0B3C6F'
@@ -187,15 +189,8 @@ export default function TrendingPage() {
         <div className="max-w-[1400px] mx-auto px-4 h-13 flex items-center justify-between" style={{ height: 52 }}>
           <div className="flex items-center gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <div className="flex">
-                <div className="w-1 h-7" style={{ background: CRIMSON }} />
-                <div className="w-1 h-7 ml-0.5" style={{ background: '#003893' }} />
-                <div className="w-7 h-7 ml-1.5 flex items-center justify-center font-bold text-white text-xs"
-                  style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)' }}>
-                  स
-                </div>
-              </div>
-              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+              <SunuwaLogo size={30} />
+              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
             </Link>
             <div className="hidden md:flex items-center gap-1 text-white/40">
               <span>/</span>
@@ -203,8 +198,8 @@ export default function TrendingPage() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Link href="/map" className="text-white/60 hover:text-white text-xs transition-colors font-medium">Map</Link>
             <Link href="/track" className="text-white/60 hover:text-white text-xs transition-colors font-medium">Track</Link>
+            <LangToggle />
             <Link href="/submit"
               className="text-xs font-bold px-3 py-1.5 transition-all"
               style={{ background: CRIMSON, color: 'white' }}>
@@ -704,7 +699,7 @@ export default function TrendingPage() {
               <div className="w-1 h-6" style={{ background: CRIMSON }} />
               <div className="w-1 h-6 ml-0.5" style={{ background: '#003893' }} />
             </div>
-            <span className="text-sm font-bold" style={{ color: GOV_BLUE }}>सुनुवाइ</span>
+            <span className="text-sm font-bold" style={{ color: GOV_BLUE }}>सुनुवा</span>
             <span className="text-gray-300">|</span>
             <span className="text-xs text-gray-500">Nepal Civic Intelligence Platform</span>
           </div>

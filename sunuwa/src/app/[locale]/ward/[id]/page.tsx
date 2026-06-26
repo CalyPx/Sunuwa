@@ -228,7 +228,7 @@ export default function WardDashboard() {
               </div>
             </div>
             <div>
-              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+              <span className="font-bold text-white text-sm" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
               <span className="text-white/30 mx-1.5 text-xs">/</span>
               <span className="text-white/70 text-xs" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>{ward.name_ne}</span>
             </div>

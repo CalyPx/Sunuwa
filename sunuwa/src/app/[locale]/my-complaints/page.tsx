@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/components/AuthContext'
+import LangToggle from '@/components/LangToggle'
+import { useLocale } from 'next-intl'
 
 // ── Design tokens ──────────────────────────────────────────────────────────
 const GOV_BLUE = '#0B3C6F'
@@ -59,27 +61,27 @@ function fmtDate(iso: string) {
 
 // ── Page ───────────────────────────────────────────────────────────────────
 export default function MyComplaintsPage() {
-  const { user, loading: authLoading, openAuth } = useAuth()
+  const { citizen, loading: authLoading, openAuth } = useAuth()
   const [complaints, setComplaints] = useState<Complaint[]>([])
   const [loading,    setLoading]    = useState(false)
   const [selected,   setSelected]   = useState<Complaint | null>(null)
 
   useEffect(() => {
-    if (!user) return
+    if (!citizen) return
     setLoading(true)
     supabase
       .from('complaints')
       .select('*, ward:wards(name_ne, municipality)')
-      .eq('citizen_id', user.id)
+      .eq('citizen_phone', citizen.phone_number)
       .order('created_at', { ascending: false })
       .then(({ data, error }) => {
         if (!error && data) setComplaints(data as Complaint[])
         setLoading(false)
       })
-  }, [user])
+  }, [citizen])
 
   // ── Not logged in ─────────────────────────────────────────────────────────
-  if (!authLoading && !user) return (
+  if (!authLoading && !citizen) return (
     <div style={{ minHeight: '100vh', background: '#FAFBFC', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
       <TopBar />
       <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 24px', textAlign: 'center' }}>
@@ -232,18 +234,23 @@ export default function MyComplaintsPage() {
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 function TopBar() {
+  const locale = useLocale() as 'ne' | 'en'
+  const label = locale === 'ne' ? 'मेरा उजुरीहरू' : 'My Complaints'
   return (
     <header style={{ background: GOV_BLUE, borderBottom: `2px solid ${GOV_BLUE}` }}>
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
-          <div style={{ display: 'flex' }}>
-            <div style={{ width: 3, height: 24, background: CRIMSON }} />
-            <div style={{ width: 3, height: 24, marginLeft: 2, background: '#003893' }} />
-          </div>
-          <span style={{ fontFamily: DEV, fontWeight: 800, fontSize: 16, color: '#fff' }}>सुनुवाइ</span>
-        </Link>
-        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.4)" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
-        <span style={{ fontFamily: DEV, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>मेरा उजुरीहरू</span>
+      <div style={{ maxWidth: 860, margin: '0 auto', padding: '0 24px', height: 56, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ display: 'flex' }}>
+              <div style={{ width: 3, height: 24, background: CRIMSON }} />
+              <div style={{ width: 3, height: 24, marginLeft: 2, background: '#003893' }} />
+            </div>
+            <span style={{ fontFamily: DEV, fontWeight: 800, fontSize: 16, color: '#fff' }}>सुनुवा</span>
+          </Link>
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="rgba(255,255,255,0.4)" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+          <span style={{ fontFamily: DEV, fontSize: 14, color: 'rgba(255,255,255,0.8)' }}>{label}</span>
+        </div>
+        <LangToggle />
       </div>
     </header>
   )

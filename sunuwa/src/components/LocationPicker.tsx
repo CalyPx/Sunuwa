@@ -52,22 +52,40 @@ export default function LocationPicker({ onSelect }: LocationPickerProps) {
       map.on('click', (e) => dropPin(L, map, e.latlng.lat, e.latlng.lng))
       mapInst.current = map
 
-      // Fix layout glitch: invalidate after container is fully painted
-      setTimeout(() => map.invalidateSize(), 100)
-      setTimeout(() => map.invalidateSize(), 400)
+      // Force correct size: invalidate at progressive intervals while container settles
+      const invalidateTimes = [50, 150, 350, 700, 1500]
+      invalidateTimes.forEach(t => setTimeout(() => map.invalidateSize(), t))
+
+      // Also invalidate on every tile load until the first successful render
+      let tilesLoaded = false
+      map.on('tileload', () => {
+        if (!tilesLoaded) {
+          tilesLoaded = true
+          map.invalidateSize()
+        }
+      })
 
       // Also invalidate on any container resize
       const ro = new ResizeObserver(() => {
         mapInst.current?.invalidateSize()
       })
       ro.observe(mapRef.current!)
+
+      // Invalidate when tab/window becomes visible again
+      const onVisibility = () => {
+        if (document.visibilityState === 'visible') mapInst.current?.invalidateSize()
+      }
+      document.addEventListener('visibilitychange', onVisibility)
+      ;(map as unknown as { _visCleanup?: () => void })._visCleanup = () =>
+        document.removeEventListener('visibilitychange', onVisibility)
       // Store ro cleanup on the map element's dataset for cleanup
       ;(map as unknown as { _roCleanup?: () => void })._roCleanup = () => ro.disconnect()
     })
     return () => {
       if (mapInst.current) {
-        const m = mapInst.current as unknown as { _roCleanup?: () => void }
+        const m = mapInst.current as unknown as { _roCleanup?: () => void; _visCleanup?: () => void }
         m._roCleanup?.()
+        m._visCleanup?.()
         mapInst.current.remove()
         mapInst.current = null
         markerRef.current = null
@@ -103,7 +121,7 @@ export default function LocationPicker({ onSelect }: LocationPickerProps) {
     setTimeout(() => mapInst.current?.invalidateSize(), 350)
   }, [onSelect]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ── Nominatim search ──────────────────────────────────────────────
+  // ── Geocoding via proxy (avoids browser-side rate limits) ──────────
   const search = (q: string) => {
     setQuery(q)
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -111,16 +129,14 @@ export default function LocationPicker({ onSelect }: LocationPickerProps) {
     debounceRef.current = setTimeout(async () => {
       setSearching(true)
       try {
-        const r = await fetch(
-          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q + ' Nepal')}&format=json&limit=5&countrycodes=np`,
-          { headers: { 'Accept-Language': 'ne,en' } }
-        )
+        const r = await fetch(`/api/geocode?type=search&q=${encodeURIComponent(q)}`)
+        if (!r.ok) throw new Error('geocode failed')
         const data = await r.json()
-        setResults(data)
+        setResults(Array.isArray(data) ? data : [])
         setShowDrop(true)
-      } catch { /* ignore */ }
+      } catch { /* ignore — search box stays as-is */ }
       setSearching(false)
-    }, 400)
+    }, 600)
   }
 
   const selectResult = (r: NominatimResult) => {
@@ -136,10 +152,8 @@ export default function LocationPicker({ onSelect }: LocationPickerProps) {
 
   const reverseGeocode = async (lat: number, lng: number) => {
     try {
-      const r = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-        { headers: { 'Accept-Language': 'ne,en' } }
-      )
+      const r = await fetch(`/api/geocode?type=reverse&lat=${lat}&lon=${lng}`)
+      if (!r.ok) return
       const d = await r.json()
       if (d?.display_name) {
         const label = d.display_name.split(',').slice(0, 2).join(',').trim()

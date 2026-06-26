@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { Link } from '@/i18n/navigation'
 import { useAuth } from '@/components/AuthContext'
+import SunuwaLogo from '@/components/SunuwaLogo'
+import LangToggle from '@/components/LangToggle'
+import { useLocale } from 'next-intl'
 
 // ── Color palette ────────────────────────────────────────────────────
 const GOV_BLUE   = '#0B3C6F'
@@ -43,182 +46,251 @@ function getDensityColor(complaints: number): string {
   return '#2D4C7A'
 }
 
-// ── Nepal Civic Pulse — intelligence card (no map) ───────────────────
+// ── Hero Impact Visual ────────────────────────────────────────────────
 
-const FEED_CATS = [
-  { name: 'Road Issue',       nameNe: 'सडक',       color: '#1168B5', icon: '🛣️'  },
-  { name: 'Water Supply',     nameNe: 'खानेपानी',  color: '#0891B2', icon: '💧'  },
-  { name: 'Electricity',      nameNe: 'बिजुली',    color: '#CA8A04', icon: '⚡'  },
-  { name: 'Health Services',  nameNe: 'स्वास्थ्य', color: '#DC2626', icon: '🏥'  },
-  { name: 'Education',        nameNe: 'शिक्षा',    color: '#7C3AED', icon: '📚'  },
-  { name: 'Waste Management', nameNe: 'फोहोर',     color: '#16A34A', icon: '🗑️'  },
-  { name: 'Sanitation',       nameNe: 'सरसफाई',    color: '#0891B2', icon: '🚿'  },
-]
-const FEED_WARDS = [
-  { ward: 'Ward 5',  city: 'Kathmandu'  },
-  { ward: 'Ward 12', city: 'Lalitpur'   },
-  { ward: 'Ward 3',  city: 'Pokhara'    },
-  { ward: 'Ward 7',  city: 'Biratnagar' },
-  { ward: 'Ward 2',  city: 'Bharatpur'  },
-  { ward: 'Ward 9',  city: 'Dharan'     },
-  { ward: 'Ward 4',  city: 'Nepalgunj'  },
-  { ward: 'Ward 8',  city: 'Butwal'     },
-]
-const FEED_TYPES: { label: string; color: string }[] = [
-  { label: 'Reported',     color: '#DC2626' },
-  { label: 'Under review', color: '#F97316' },
-  { label: 'Resolved',     color: '#16A34A' },
+const CATEGORIES = [
+  { nameNe: 'सडक तथा पूर्वाधार', pct: 31, color: '#1168B5', icon: 'M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z' },
+  { nameNe: 'खानेपानी',           pct: 22, color: '#0891B2', icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z' },
+  { nameNe: 'स्वास्थ्य',          pct: 18, color: '#C8102E', icon: 'M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z' },
+  { nameNe: 'बिजुली',             pct: 15, color: '#D97706', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
+  { nameNe: 'शिक्षा',             pct: 14, color: '#7C3AED', icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253' },
 ]
 
-interface FeedItem { id: number; cat: typeof FEED_CATS[0]; ward: typeof FEED_WARDS[0]; type: typeof FEED_TYPES[0]; minsAgo: number }
+const RESOLVED_FEED = [
+  { id: 'KTM-5-A3X', cat: 'सडक',       ward: 'वडा ५, काठमाडौं', days: 4 },
+  { id: 'PKR-3-B7Y', cat: 'खानेपानी',  ward: 'वडा ३, पोखरा',    days: 3 },
+  { id: 'BRT-8-C2Z', cat: 'बिजुली',    ward: 'वडा ८, भरतपुर',   days: 2 },
+  { id: 'LLT-2-D9W', cat: 'स्वास्थ्य', ward: 'वडा २, ललितपुर',   days: 1 },
+]
 
-let _fid = 0
-function makeFeedItem(minsAgo: number): FeedItem {
-  return {
-    id:      _fid++,
-    cat:     FEED_CATS[Math.floor(Math.random() * FEED_CATS.length)],
-    ward:    FEED_WARDS[Math.floor(Math.random() * FEED_WARDS.length)],
-    type:    FEED_TYPES[Math.floor(Math.random() * FEED_TYPES.length)],
-    minsAgo,
-  }
+const JOURNEY_STEPS = [
+  { ne: 'दर्ता',    en: 'Filed',      icon: 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', color: '#0B3C6F' },
+  { ne: 'समीक्षा',  en: 'Reviewed',   icon: 'M15 12a3 3 0 11-6 0 3 3 0 016 0z M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z', color: '#1168B5' },
+  { ne: 'प्रक्रिया', en: 'In Progress', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z', color: '#D97706' },
+  { ne: 'समाधान',  en: 'Resolved',   icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z', color: '#16A34A' },
+]
+
+interface StatsData {
+  total: number
+  resolved: number
+  resolutionRate: number | null
+  avgDays: number | null
+  categories: { name: string; count: number; pct: number }[]
 }
 
-const AI_INSIGHTS = [
-  { icon: '📈', text: 'Road complaints up 23% in Bagmati this week — likely monsoon damage.' },
-  { icon: '✅', text: 'Water supply resolutions improved 18% after Ward 5 pipeline repair.' },
-  { icon: '⚠️', text: 'Electricity faults clustering in Nepalgunj — grid inspection recommended.' },
-  { icon: '🏥', text: 'Health Services complaints steady — no major escalations this month.' },
-]
+// Map English category names to Nepali + color
+const CAT_META: Record<string, { ne: string; color: string }> = {
+  Infrastructure: { ne: 'सडक तथा पूर्वाधार', color: '#1168B5' },
+  Water:          { ne: 'खानेपानी',           color: '#0891B2' },
+  Health:         { ne: 'स्वास्थ्य',          color: '#C8102E' },
+  Electricity:    { ne: 'बिजुली',             color: '#D97706' },
+  Education:      { ne: 'शिक्षा',             color: '#7C3AED' },
+  Environment:    { ne: 'वातावरण',            color: '#16A34A' },
+  Safety:         { ne: 'सुरक्षा',             color: '#DC2626' },
+  Corruption:     { ne: 'भ्रष्टाचार',          color: '#9333EA' },
+  Other:          { ne: 'अन्य',               color: '#64748B' },
+}
 
-function CivicPulseWidget() {
-  const [feed, setFeed] = useState<FeedItem[]>(() =>
-    Array.from({ length: 6 }, (_, i) => makeFeedItem((i + 1) * 4))
-  )
-  const [insightIdx, setInsightIdx] = useState(0)
-  const [clock, setClock] = useState('')
+function HeroImpactCard() {
+  const [activeStep, setActiveStep] = useState(0)
+  const [feedIdx, setFeedIdx] = useState(0)
+  const [barWidths, setBarWidths] = useState<number[]>(CATEGORIES.map(() => 0))
+  const [stats, setStats] = useState<StatsData | null>(null)
+  const [liveCats, setLiveCats] = useState(CATEGORIES)
 
   useEffect(() => {
-    setClock(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' }))
-    const t1 = setInterval(() => setClock(new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })), 30000)
-    const t2 = setInterval(() => setFeed(f => [makeFeedItem(0), ...f.slice(0, 7)]), 5000)
-    const t3 = setInterval(() => setInsightIdx(i => (i + 1) % AI_INSIGHTS.length), 6000)
-    return () => { clearInterval(t1); clearInterval(t2); clearInterval(t3) }
+    fetch('/api/stats')
+      .then(r => r.ok ? r.json() : null)
+      .then((data: StatsData | null) => {
+        if (!data) return
+        setStats(data)
+        // Replace CATEGORIES with real data if available
+        if (data.categories?.length) {
+          const mapped = data.categories.map(c => {
+            const meta = CAT_META[c.name] ?? { ne: c.name, color: '#64748B' }
+            // Reuse icon path from original CATEGORIES if matched, else default
+            const orig = CATEGORIES.find(x => x.nameNe === meta.ne)
+            return {
+              nameNe: meta.ne,
+              pct:    c.pct,
+              color:  meta.color,
+              icon:   orig?.icon ?? CATEGORIES[0].icon,
+            }
+          })
+          setLiveCats(mapped)
+          setBarWidths(mapped.map(() => 0))
+          setTimeout(() => setBarWidths(mapped.map(c => c.pct)), 120)
+        }
+      })
+      .catch(() => null)
   }, [])
 
-  const S = {
-    card:    { background: '#fff', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden' } as React.CSSProperties,
-    label:   { fontSize: 9, fontWeight: 700, color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase' as const, margin: '0 0 10px' },
-  }
+  useEffect(() => {
+    // Animate journey step forward
+    const t1 = setInterval(() => setActiveStep(s => (s + 1) % JOURNEY_STEPS.length), 2200)
+    // Cycle resolved feed
+    const t2 = setInterval(() => setFeedIdx(i => (i + 1) % RESOLVED_FEED.length), 3500)
+    // Animate bars after mount
+    const t3 = setTimeout(() => setBarWidths(liveCats.map(c => c.pct)), 120)
+    return () => { clearInterval(t1); clearInterval(t2); clearTimeout(t3) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const DEV = 'Noto Sans Devanagari, sans-serif'
 
   return (
-    <div style={{ border: '1px solid #E2E8F0', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 32px rgba(22,59,109,0.08)', background: '#F8FAFC', fontFamily: 'system-ui, -apple-system, sans-serif' }}>
+    <div style={{
+      borderRadius: 20,
+      overflow: 'hidden',
+      boxShadow: '0 8px 48px rgba(11,60,111,0.13)',
+      background: '#fff',
+      border: '1px solid #E2E8F0',
+      fontFamily: 'system-ui, -apple-system, sans-serif',
+    }}>
 
-      {/* Header bar */}
-      <div style={{ background: '#163B6D', padding: '11px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80', display: 'inline-block', animation: 'cpPulse 2.4s ease-in-out infinite', flexShrink: 0 }} />
-          <span style={{ fontSize: 10, fontWeight: 800, color: '#fff', letterSpacing: 2.5, textTransform: 'uppercase' }}>Nepal Civic Pulse</span>
+      {/* ── Top gradient header ── */}
+      <div style={{
+        background: 'linear-gradient(135deg, #0B3C6F 0%, #1A5FA0 60%, #1168B5 100%)',
+        padding: '20px 22px 18px',
+        position: 'relative',
+        overflow: 'hidden',
+      }}>
+        {/* decorative circles */}
+        <div style={{ position: 'absolute', right: -20, top: -20, width: 120, height: 120, borderRadius: '50%', background: 'rgba(255,255,255,0.04)' }} />
+        <div style={{ position: 'absolute', right: 30, top: 30, width: 60, height: 60, borderRadius: '50%', background: 'rgba(255,255,255,0.06)' }} />
+
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18, position: 'relative' }}>
+          <div>
+            <p style={{ fontSize: 9, fontWeight: 800, color: 'rgba(255,255,255,0.5)', letterSpacing: 2.5, textTransform: 'uppercase', margin: 0 }}>Platform Impact</p>
+            <p style={{ fontSize: 16, fontWeight: 800, color: '#fff', margin: '3px 0 0', fontFamily: DEV, letterSpacing: -0.3 }}>सुनुवा — वास्तविक परिवर्तन</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(74,222,128,0.15)', border: '1px solid rgba(74,222,128,0.3)', borderRadius: 20, padding: '4px 10px' }}>
+            <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#4ADE80', display: 'inline-block', animation: 'hicPulse 2s ease-in-out infinite' }} />
+            <span style={{ fontSize: 9, fontWeight: 800, color: '#4ADE80', letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Live</span>
+          </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 9, color: 'rgba(255,255,255,0.4)', fontFamily: 'monospace' }}>{clock}</span>
-          <span style={{ fontSize: 9, background: 'rgba(74,222,128,0.18)', color: '#4ADE80', padding: '2px 8px', borderRadius: 20, fontWeight: 700, border: '1px solid rgba(74,222,128,0.25)' }}>LIVE</span>
+
+        {/* Big metric trio */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1px 1fr 1px 1fr', alignItems: 'center', position: 'relative' }}>
+          {[
+            {
+              value: stats ? stats.total.toLocaleString() : '—',
+              label: 'उजुरी दर्ता', sub: 'Total Filed',
+            },
+            null,
+            {
+              value: stats?.resolutionRate != null ? `${stats.resolutionRate}%` : '—',
+              label: 'समाधान दर', sub: 'Resolved Rate',
+            },
+            null,
+            {
+              value: stats?.avgDays != null ? `${stats.avgDays}d` : '—',
+              label: 'औसत समय', sub: 'Avg Response',
+            },
+          ].map((m, i) =>
+            m === null
+              ? <div key={i} style={{ width: 1, height: 40, background: 'rgba(255,255,255,0.15)', margin: '0 auto' }} />
+              : (
+                <div key={i} style={{ textAlign: 'center', padding: '0 6px' }}>
+                  <p style={{ fontSize: 22, fontWeight: 900, color: '#fff', margin: 0, letterSpacing: -1, fontVariantNumeric: 'tabular-nums' }}>{m.value}</p>
+                  <p style={{ fontSize: 10, fontWeight: 700, color: 'rgba(255,255,255,0.7)', margin: '2px 0 0', fontFamily: DEV }}>{m.label}</p>
+                  <p style={{ fontSize: 8, color: 'rgba(255,255,255,0.35)', margin: '1px 0 0', letterSpacing: 0.5 }}>{m.sub}</p>
+                </div>
+              )
+          )}
         </div>
       </div>
 
-      {/* Body: 2-col grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, padding: 14 }}>
-
-        {/* LEFT: Activity feed */}
-        <div style={S.card}>
-          <div style={{ padding: '12px 14px 8px', borderBottom: '1px solid #F1F5F9' }}>
-            <p style={S.label}>Live Activity</p>
-          </div>
-          <div style={{ overflowY: 'auto', maxHeight: 210 }}>
-            {feed.map((item, idx) => (
-              <div key={item.id} style={{
-                padding: '9px 14px', borderBottom: '1px solid #F8FAFC',
-                display: 'flex', gap: 10, alignItems: 'flex-start',
-                opacity: idx === 0 ? 1 : 0.85,
-                transition: 'opacity 0.4s ease',
-              }}>
-                <span style={{ fontSize: 15, flexShrink: 0, marginTop: 1 }}>{item.cat.icon}</span>
-                <div style={{ minWidth: 0 }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#0F172A', margin: 0, lineHeight: 1.3 }}>{item.cat.name}</p>
-                  <p style={{ fontSize: 10, color: '#64748B', margin: '2px 0 0' }}>{item.ward.ward}, {item.ward.city}</p>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 3 }}>
-                    <span style={{ width: 5, height: 5, borderRadius: '50%', background: item.type.color, flexShrink: 0, display: 'inline-block' }} />
-                    <span style={{ fontSize: 10, color: item.type.color, fontWeight: 600 }}>
-                      {item.minsAgo === 0 ? 'just now' : `${item.minsAgo}m ago`} · {item.type.label}
-                    </span>
-                  </div>
+      {/* ── Complaint Journey ── */}
+      <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid #F1F5F9' }}>
+        <p style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase' as const, margin: '0 0 14px' }}>Complaint Journey</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: 0, position: 'relative' }}>
+          {/* connecting line */}
+          <div style={{ position: 'absolute', top: 18, left: '12.5%', right: '12.5%', height: 2, background: '#E2E8F0', zIndex: 0 }} />
+          <div style={{
+            position: 'absolute', top: 18, left: '12.5%', height: 2, background: 'linear-gradient(90deg, #0B3C6F, #16A34A)',
+            width: `${(activeStep / (JOURNEY_STEPS.length - 1)) * 75}%`,
+            transition: 'width 0.7s cubic-bezier(.4,0,.2,1)',
+            zIndex: 1,
+          }} />
+          {JOURNEY_STEPS.map((step, i) => {
+            const done    = i < activeStep
+            const current = i === activeStep
+            return (
+              <div key={step.ne} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, position: 'relative', zIndex: 2 }}>
+                <div style={{
+                  width: 36, height: 36, borderRadius: '50%',
+                  background: done ? step.color : current ? step.color : '#F1F5F9',
+                  border: `2px solid ${done || current ? step.color : '#E2E8F0'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  boxShadow: current ? `0 0 0 4px ${step.color}22` : 'none',
+                  transition: 'all 0.4s ease',
+                }}>
+                  <svg width="16" height="16" fill="none" viewBox="0 0 24 24"
+                    stroke={done || current ? '#fff' : '#CBD5E1'} strokeWidth={1.8}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d={step.icon} />
+                  </svg>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: done || current ? '#0F172A' : '#94A3B8', margin: 0, fontFamily: DEV, transition: 'color 0.3s' }}>{step.ne}</p>
+                  <p style={{ fontSize: 9, color: '#CBD5E1', margin: '1px 0 0', letterSpacing: 0.3 }}>{step.en}</p>
                 </div>
               </div>
-            ))}
-          </div>
-        </div>
-
-        {/* RIGHT: AI insight + Trust metrics + Gov status */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-
-          {/* AI Insight */}
-          <div style={{ ...S.card, padding: '12px 14px', borderLeft: '3px solid #163B6D' }}>
-            <p style={S.label}>AI Insight</p>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'flex-start', minHeight: 44 }}>
-              <span style={{ fontSize: 16, flexShrink: 0 }}>{AI_INSIGHTS[insightIdx].icon}</span>
-              <p style={{ fontSize: 12, color: '#334155', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>
-                {AI_INSIGHTS[insightIdx].text}
-              </p>
-            </div>
-          </div>
-
-          {/* Trust metrics — 2x2 */}
-          <div style={{ ...S.card, padding: '12px 14px' }}>
-            <p style={S.label}>Platform Metrics</p>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 0, border: '1px solid #F1F5F9', borderRadius: 8, overflow: 'hidden' }}>
-              {[
-                { value: '18,420', sub: 'Total Complaints', color: '#163B6D' },
-                { value: '15,830', sub: 'Resolved',          color: '#166534' },
-                { value: '86%',    sub: 'Resolution Rate',   color: '#D97706' },
-                { value: '3.2d',   sub: 'Avg Response',      color: '#163B6D' },
-              ].map((m, i) => (
-                <div key={m.sub} style={{
-                  padding: '10px 10px',
-                  borderRight:  i % 2 === 0 ? '1px solid #F1F5F9' : 'none',
-                  borderBottom: i < 2 ? '1px solid #F1F5F9' : 'none',
-                  background: '#fff',
-                }}>
-                  <p style={{ fontSize: 16, fontWeight: 800, color: m.color, margin: 0, fontVariantNumeric: 'tabular-nums', letterSpacing: -0.5 }}>{m.value}</p>
-                  <p style={{ fontSize: 9, color: '#94A3B8', margin: '3px 0 0', fontWeight: 600, letterSpacing: 0.5 }}>{m.sub}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Government activity status */}
-          <div style={{ ...S.card, padding: '12px 14px' }}>
-            <p style={S.label}>Government Activity</p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
-              {[
-                { label: 'Active Wards',           value: '4,753', dot: '#166534' },
-                { label: 'Municipalities Online',  value: '284',   dot: '#166534' },
-                { label: 'Provinces Online',       value: '7 / 7', dot: '#166534' },
-                { label: 'Ministries Monitoring',  value: '12',    dot: '#D97706' },
-              ].map(g => (
-                <div key={g.label} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
-                    <span style={{ width: 6, height: 6, borderRadius: '50%', background: g.dot, flexShrink: 0, display: 'inline-block' }} />
-                    <span style={{ fontSize: 11, color: '#475569' }}>{g.label}</span>
-                  </div>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#0F172A', fontVariantNumeric: 'tabular-nums' }}>{g.value}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
+            )
+          })}
         </div>
       </div>
 
-      <style>{`@keyframes cpPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }`}</style>
+      {/* ── Category breakdown ── */}
+      <div style={{ padding: '14px 20px 12px', borderBottom: '1px solid #F1F5F9' }}>
+        <p style={{ fontSize: 9, fontWeight: 800, color: '#94A3B8', letterSpacing: 2, textTransform: 'uppercase' as const, margin: '0 0 10px' }}>Top Categories</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+          {liveCats.map((cat, i) => (
+            <div key={cat.nameNe} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <p style={{ fontSize: 11, color: '#374151', margin: 0, minWidth: 120, fontFamily: DEV }}>{cat.nameNe}</p>
+              <div style={{ flex: 1, height: 5, background: '#F1F5F9', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{
+                  height: '100%', borderRadius: 10,
+                  background: cat.color,
+                  width: `${barWidths[i]}%`,
+                  transition: 'width 1s cubic-bezier(.4,0,.2,1)',
+                  transitionDelay: `${i * 80}ms`,
+                }} />
+              </div>
+              <p style={{ fontSize: 10, fontWeight: 700, color: cat.color, margin: 0, minWidth: 28, textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>{cat.pct}%</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── Recently resolved ticker ── */}
+      <div style={{ padding: '12px 20px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+          <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#16A34A" strokeWidth={2.5}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span style={{ fontSize: 9, fontWeight: 800, color: '#16A34A', letterSpacing: 1.5, textTransform: 'uppercase' as const }}>Resolved</span>
+        </div>
+        <div style={{ flex: 1, overflow: 'hidden' }}>
+          <p style={{
+            fontSize: 11, color: '#374151', margin: 0, fontFamily: DEV,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            animation: 'tickerFade 0.4s ease',
+            key: feedIdx,
+          } as React.CSSProperties}>
+            <span style={{ fontWeight: 700, color: '#0B3C6F', fontFamily: 'monospace', fontSize: 10 }}>{RESOLVED_FEED[feedIdx].id}</span>
+            {' · '}{RESOLVED_FEED[feedIdx].cat}{' · '}{RESOLVED_FEED[feedIdx].ward}
+          </p>
+        </div>
+        <span style={{ fontSize: 10, fontWeight: 700, background: '#F0FDF4', color: '#16A34A', padding: '2px 8px', borderRadius: 20, border: '1px solid #BBF7D0', flexShrink: 0 }}>
+          {RESOLVED_FEED[feedIdx].days}d
+        </span>
+      </div>
+
+      <style>{`
+        @keyframes hicPulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        @keyframes tickerFade { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+      `}</style>
     </div>
   )
 }
@@ -362,8 +434,29 @@ function ProvinceMap({ filter }: { filter: string }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────
+const T = {
+  ne: {
+    home: 'गृहपृष्ठ', track: 'उजुरी ट्र्याक', transparency: 'पारदर्शिता',
+    login: 'लग इन / दर्ता', officer: 'अधिकारी', submit: 'उजुरी दर्ता',
+    myComplaints: 'मेरा उजुरी',
+    hero1: 'जनताको भनाइ,', hero2: 'सरकारको सुनाइ।',
+    heroSub: 'तपाईंको गुनासो सही निकायसम्म पुग्छ, ट्र्याक हुन्छ, र समाधान प्रक्रिया पारदर्शी रूपमा देखिन्छ।',
+    submitCta: 'उजुरी दर्ता गर्नुहोस्', trackCta: 'उजुरी ट्र्याक गर्नुहोस्',
+  },
+  en: {
+    home: 'Home', track: 'Track Complaint', transparency: 'Transparency',
+    login: 'Log In / Register', officer: 'Officer', submit: 'File Complaint',
+    myComplaints: 'My Complaints',
+    hero1: 'Citizens\' Voice,', hero2: 'Reaching Government.',
+    heroSub: 'Your complaint reaches the right authority, gets tracked, and the resolution process is visible transparently.',
+    submitCta: 'File a Complaint', trackCta: 'Track Your Complaint',
+  },
+}
+
 export default function HomePage() {
-  const { user, openAuth, signOut } = useAuth()
+  const { citizen: user, openAuth, signOut } = useAuth()
+  const locale = useLocale() as 'ne' | 'en'
+  const t = T[locale]
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [mapFilter,      setMapFilter]      = useState('all')
   const [statsActive,    setStatsActive]    = useState(false)
@@ -389,11 +482,9 @@ export default function HomePage() {
   }, [])
 
   const NAV_LINKS = [
-    { href: '/',               label: 'गृहपृष्ठ' },
-    { href: '/map',            label: 'Complaint Map' },
-    { href: '/track',          label: 'उजुरी ट्र्याक' },
-    { href: '/trending',       label: 'Transparency' },
-    { href: '/my-complaints',  label: 'मेरा उजुरी' },
+    { href: '/',         label: t.home },
+    { href: '/track',    label: t.track },
+    { href: '/trending', label: t.transparency },
   ]
 
   const MAP_FILTERS = [
@@ -417,19 +508,11 @@ export default function HomePage() {
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 flex-shrink-0">
-            {/* Nepal flag-inspired mark */}
-            <div className="flex flex-shrink-0">
-              <div className="w-1 h-9" style={{ background: CRIMSON }} />
-              <div className="w-1 h-9 ml-0.5" style={{ background: '#003893' }} />
-              <div className="w-9 h-9 ml-1.5 flex items-center justify-center font-bold text-white text-base"
-                style={{ background: 'rgba(255,255,255,0.12)', border: '1.5px solid rgba(255,255,255,0.3)' }}>
-                स
-              </div>
-            </div>
+            <SunuwaLogo size={96} />
             <div>
               <div className="font-bold text-white text-base tracking-tight leading-none"
                 style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
-                सुनुवाइ
+                सुनुवा
               </div>
               <div className="text-white/50 text-[10px] tracking-widest uppercase leading-none mt-0.5">
                 Civic Intelligence
@@ -462,7 +545,7 @@ export default function HomePage() {
                 <button
                   onClick={() => signOut()}
                   className="text-sm text-white/50 hover:text-white/80 px-2 py-1.5 transition-colors"
-                  title={user.phone ?? 'Sign out'}
+                  title={user.phone_number ?? 'Sign out'}
                 >
                   <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" /></svg>
                 </button>
@@ -474,17 +557,18 @@ export default function HomePage() {
                 style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', borderRadius: 6 }}
               >
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" /></svg>
-                लग इन / दर्ता
+                {t.login}
               </button>
             )}
+            <LangToggle />
             <Link href="/login"
               className="hidden md:block text-sm text-white/50 hover:text-white/70 px-2 py-1.5 transition-colors">
-              अधिकारी
+              {t.officer}
             </Link>
             <Link href="/submit"
               className="text-sm font-bold px-4 py-2 transition-all flex items-center gap-1.5"
               style={{ background: CRIMSON, color: 'white' }}>
-              <span style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>उजुरी दर्ता</span>
+              <span style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>{t.submit}</span>
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
               </svg>
@@ -521,16 +605,15 @@ export default function HomePage() {
         {/* Left: headline */}
         <div>
           {/* Status badge */}
-          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-6 px-3 py-1.5 border"
-            style={{ borderColor: GOV_BLUE, color: GOV_BLUE, background: '#EFF4FA' }}>
-            <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: CRIMSON }} />
-            Live · Nepal Civic Intelligence Platform
+          <div className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider mb-6 px-3 py-1.5 "
+           >
+            
           </div>
 
           <h1 className="text-4xl md:text-5xl font-bold leading-tight mb-5"
             style={{ color: DARK_TEXT, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
-            नागरिकको आवाज,<br />
-            <span style={{ color: GOV_BLUE }}>सरकारसम्म।</span>
+            जनताको भनाइ,<br />
+            <span style={{ color: GOV_BLUE }}>सरकारको सुनाइ।</span>
           </h1>
 
           <p className="text-base md:text-lg text-gray-600 leading-relaxed mb-8 max-w-lg"
@@ -561,8 +644,8 @@ export default function HomePage() {
          
         </div>
 
-        {/* Right: Nepal Civic Pulse */}
-        <CivicPulseWidget />
+        {/* Right: Impact visual */}
+        <HeroImpactCard />
       </section>
 
     
@@ -687,47 +770,7 @@ export default function HomePage() {
       </section>
 
       {/* == HOW IT WORKS ================================================═ */}
-      <section className="py-12 md:py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          <div className="mb-10 pb-5 border-b border-gray-200">
-            <p className="text-xs font-bold uppercase tracking-widest mb-1" style={{ color: CRIMSON }}>Process</p>
-            <h2 className="text-2xl font-bold" style={{ color: DARK_TEXT, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
-              उजुरीको यात्रा
-            </h2>
-          </div>
-
-          {/* Horizontal timeline */}
-          <div className="relative">
-            {/* Connector line */}
-            <div className="hidden md:block absolute top-8 left-0 right-0 h-0.5 bg-gray-200" style={{ zIndex: 0 }} />
-            <div className="grid md:grid-cols-5 gap-6 relative" style={{ zIndex: 1 }}>
-              {[
-                { step: '01', title: 'उजुरी दर्ता', desc: 'नेपाली वा English मा — कुनै लगइन आवश्यक छैन', icon: '✍' },
-                { step: '02', title: 'AI वर्गीकरण', desc: 'Gemini AI ले समस्या पहिचान गरी सही निकाय निर्धारण गर्छ', icon: '🤖' },
-                { step: '03', title: 'निकायमा पठाइन्छ', desc: 'वडा कार्यालयले ३ दिनभित्र प्रतिक्रिया दिनुपर्छ', icon: '📋' },
-                { step: '04', title: 'ट्र्याकिङ', desc: 'Short code मार्फत समस्याको स्थिति हेर्नुहोस्', icon: '📍' },
-                { step: '05', title: 'समाधान', desc: 'नसमाधान भए स्वतः माथिल्लो तहमा escalate हुन्छ', icon: '✓' },
-              ].map((s, i) => (
-                <div key={s.step} className="flex flex-col items-center text-center">
-                  {/* Step circle */}
-                  <div className="w-16 h-16 flex items-center justify-center mb-4 border-2 font-bold text-2xl bg-white"
-                    style={{ borderColor: GOV_BLUE, color: GOV_BLUE }}>
-                    {s.icon}
-                  </div>
-                  <div className="text-[10px] font-bold tracking-widest mb-1" style={{ color: CRIMSON }}>STEP {s.step}</div>
-                  <h3 className="font-bold text-sm mb-2" style={{ color: DARK_TEXT, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
-                    {s.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 leading-relaxed" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
-                    {s.desc}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
+      
       {/* == TRANSPARENCY DASHBOARD ====================================== */}
       <section className="py-12 md:py-16" style={{ background: LIGHT_GRAY }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -958,7 +1001,7 @@ export default function HomePage() {
                     स
                   </div>
                 </div>
-                <span className="font-bold text-white" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+                <span className="font-bold text-white" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
               </div>
               <p className="text-xs text-white/40 leading-relaxed" style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>
                 नेपालको पहिलो नागरिक खुफिया प्लेटफर्म। गुनासोलाई intelligence मा बदल्ने।

@@ -2,6 +2,9 @@
 
 import { useState } from 'react'
 import { Link } from '@/i18n/navigation'
+import SunuwaLogo from '@/components/SunuwaLogo'
+import LangToggle from '@/components/LangToggle'
+import { useLocale } from 'next-intl'
 
 // == Design tokens ==
 const NAV  = '#123A6B'
@@ -29,6 +32,8 @@ interface Complaint {
   severity: number; summary_ne?: string; status: string
   created_at: string; escalation_level: number; days_old: number
   tracking_code?: string
+  officer_notes?: string[]
+  referred_to?: string | null
   ward: { name_ne: string; municipality: string } | null
 }
 
@@ -51,7 +56,14 @@ function sevLabel(s: number) {
   return 'Low'
 }
 
+const TT = {
+  ne: { title: 'तपाईंको उजुरीको स्थिति', sub: 'ट्र्याकिङ कोड राखेर आफ्नो उजुरी कहाँ पुग्यो हेर्नुहोस्', search: 'खोज्नुहोस्', searching: 'खोज्दैछ...', notFound: 'यो Tracking ID फेला परेन। कृपया फेरि जाँच्नुहोस्।', submit: '+ उजुरी दर्ता', placeholder: 'ट्र्याकिङ कोड — e.g. KTM-7-3QP' },
+  en: { title: 'Your Complaint Status', sub: 'Enter your tracking code to see where your complaint stands', search: 'Search', searching: 'Searching...', notFound: 'Tracking ID not found. Please check and try again.', submit: '+ File Complaint', placeholder: 'Tracking code — e.g. KTM-7-3QP' },
+}
+
 export default function TrackPage() {
+  const locale = useLocale() as 'ne' | 'en'
+  const t = TT[locale]
   const [trackId,   setTrackId]   = useState('')
   const [complaint, setComplaint] = useState<Complaint | null>(null)
   const [loading,   setLoading]   = useState(false)
@@ -74,15 +86,19 @@ export default function TrackPage() {
   const trackCode = complaint?.tracking_code || complaint?.id?.slice(0, 13)?.toUpperCase() || ''
   const filed     = complaint ? new Date(complaint.created_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''
 
-  // Case journey events derived from escalation level
+  // Case journey events derived from real DB fields
+  const isResolved   = complaint?.status === 'resolved'
+  const isEscalated  = complaint?.status === 'escalated'
+  const isInProgress = complaint?.status === 'in_progress'
+  const hasNotes     = (complaint?.officer_notes?.length ?? 0) > 0
   const journeyEvents = complaint ? [
-    { done: true,  icon: '✓', title: 'Complaint submitted',          sub: filed,       current: false },
-    { done: true,  icon: '✓', title: 'AI classified — ' + (complaint.category_en || 'Other'), sub: filed, current: false },
-    { done: true,  icon: '✓', title: 'Assigned to ' + (complaint.ward?.name_ne || 'Ward Office'), sub: filed, current: false },
-    { done: escLevel > 1,  icon: escLevel > 1 ? '✓' : '○', title: 'Officer review',   sub: escLevel > 1 ? `${daysOld - 2}d after filing` : '', current: escLevel === 1 },
-    { done: escLevel > 2,  icon: escLevel > 2 ? '✓' : '○', title: 'Escalated to Municipality', sub: '', current: escLevel === 2 },
-    { done: escLevel > 3,  icon: escLevel > 3 ? '✓' : '○', title: 'Escalated to Province', sub: '', current: escLevel === 3 },
-    { done: complaint.status === 'resolved', icon: complaint.status === 'resolved' ? '✓' : '○', title: 'Resolution', sub: '', current: complaint.status === 'resolved' },
+    { done: true,        title: 'Complaint submitted',                              sub: filed,   current: false },
+    { done: true,        title: 'AI classified — ' + (complaint.category_en || 'Other'), sub: filed, current: false },
+    { done: true,        title: 'Assigned to ' + (complaint.ward?.name_ne || 'Ward Office'), sub: '', current: false },
+    { done: hasNotes || isInProgress || isResolved || escLevel > 1, title: 'Officer review started', sub: hasNotes ? 'Officer has added notes' : '', current: !hasNotes && !isInProgress && !isResolved && escLevel === 1 },
+    { done: escLevel > 2 || isEscalated, title: 'Escalated to Municipality', sub: complaint.referred_to ? `Referred to ${complaint.referred_to}` : '', current: escLevel === 2 && !isEscalated },
+    { done: escLevel > 3, title: 'Escalated to Province',     sub: '', current: escLevel === 3 },
+    { done: isResolved,   title: 'Resolution',                 sub: isResolved ? 'Issue addressed' : '', current: isResolved },
   ] : []
 
   return (
@@ -91,18 +107,14 @@ export default function TrackPage() {
       {/* == Navbar == */}
       <header style={{ background: NAV, borderBottom: `2px solid ${DEEP}`, position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', padding: '0 24px', height: 52, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ display: 'flex' }}>
-              <div style={{ width: 4, height: 28, background: CRIM }} />
-              <div style={{ width: 4, height: 28, marginLeft: 2, background: '#003893' }} />
-              <div style={{ width: 28, height: 28, marginLeft: 6, background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, color: '#fff', fontSize: 12 }}>स</div>
-            </div>
-            <span style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontWeight: 700, fontSize: 14, color: '#fff' }}>सुनुवाइ</span>
+          <Link href="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <SunuwaLogo size={96} />
+            <span style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontWeight: 700, fontSize: 14, color: '#fff' }}>सुनुवा</span>
           </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Link href="/map"    style={{ fontSize: 12, color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Map</Link>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <LangToggle />
             <Link href="/submit" style={{ fontSize: 12, fontWeight: 700, background: CRIM, color: '#fff', padding: '6px 14px', textDecoration: 'none' }}>
-              + उजुरी दर्ता
+              {t.submit}
             </Link>
           </div>
         </div>
@@ -116,10 +128,10 @@ export default function TrackPage() {
             Complaint Tracking System
           </p>
           <h1 style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 32, fontWeight: 800, color: TXT, margin: '0 0 8px', lineHeight: 1.2 }}>
-            तपाईंको उजुरीको स्थिति
+            {t.title}
           </h1>
           <p style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 15, color: '#6B7280', margin: '0 0 32px' }}>
-            ट्र्याकिङ कोड राखेर आफ्नो उजुरी कहाँ पुग्यो हेर्नुहोस्
+            {t.sub}
           </p>
 
           {/* Search bar */}
@@ -132,7 +144,7 @@ export default function TrackPage() {
                 value={trackId}
                 onChange={e => setTrackId(e.target.value.toUpperCase())}
                 onKeyDown={e => e.key === 'Enter' && handleTrack()}
-                placeholder="Enter tracking code — e.g. KTM-7-3QP"
+                placeholder={t.placeholder}
                 style={{
                   flex: 1, border: 'none', outline: 'none', fontFamily: 'monospace',
                   fontSize: 15, color: TXT, background: 'transparent', letterSpacing: 1,
@@ -148,7 +160,7 @@ export default function TrackPage() {
                   fontFamily: 'Noto Sans Devanagari, sans-serif', borderRadius: 8,
                   opacity: trackId.trim().length < 6 ? 0.5 : 1,
                 }}>
-                {loading ? 'Searching...' : 'खोज्नुहोस्'}
+                {loading ? t.searching : t.search}
               </button>
             </div>
           </div>
@@ -169,7 +181,7 @@ export default function TrackPage() {
         {notFound && (
           <div style={{ maxWidth: 560, margin: '0 auto 32px', background: '#FEF2F2', border: `1px solid #FECACA`, borderLeft: `4px solid ${CRIM}`, padding: '16px 20px', borderRadius: 8 }}>
             <p style={{ fontFamily: 'Noto Sans Devanagari, sans-serif', fontSize: 14, color: CRIM, margin: 0, fontWeight: 600 }}>
-              यो Tracking ID फेला परेन। कृपया फेरि जाँच्नुहोस्।
+              {t.notFound}
             </p>
             <p style={{ fontSize: 12, color: '#9CA3AF', margin: '4px 0 0' }}>Format: KTM-7-3QP or full complaint ID</p>
           </div>
@@ -185,12 +197,12 @@ export default function TrackPage() {
                 <span style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,255,255,0.7)', letterSpacing: 2, textTransform: 'uppercase' }}>Case Summary</span>
                 <span style={{
                   fontSize: 10, fontWeight: 700, padding: '3px 10px', borderRadius: 4,
-                  background: complaint.status === 'resolved' ? `${GRN}25` : `rgba(255,255,255,0.12)`,
-                  color: complaint.status === 'resolved' ? '#4ADE80' : 'rgba(255,255,255,0.8)',
-                  border: `1px solid ${complaint.status === 'resolved' ? '#4ADE8040' : 'rgba(255,255,255,0.2)'}`,
+                  background: complaint.status === 'resolved' ? `${GRN}25` : complaint.status === 'escalated' ? `${CRIM}25` : complaint.status === 'in_progress' ? 'rgba(59,130,246,0.15)' : `rgba(255,255,255,0.12)`,
+                  color: complaint.status === 'resolved' ? '#4ADE80' : complaint.status === 'escalated' ? '#FCA5A5' : complaint.status === 'in_progress' ? '#93C5FD' : 'rgba(255,255,255,0.8)',
+                  border: `1px solid ${complaint.status === 'resolved' ? '#4ADE8040' : complaint.status === 'escalated' ? `${CRIM}50` : complaint.status === 'in_progress' ? 'rgba(59,130,246,0.3)' : 'rgba(255,255,255,0.2)'}`,
                   letterSpacing: 1, textTransform: 'uppercase',
                 }}>
-                  {complaint.status === 'resolved' ? '✓ Resolved' : complaint.status === 'pending' ? 'Under Review' : 'Active'}
+                  {complaint.status === 'resolved' ? '✓ Resolved' : complaint.status === 'escalated' ? '↑ Escalated' : complaint.status === 'in_progress' ? 'In Progress' : 'Active'}
                 </span>
               </div>
               <div style={{ padding: '20px 24px' }}>
@@ -292,7 +304,6 @@ export default function TrackPage() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
                     {journeyEvents.map((ev, i) => (
                       <div key={i} style={{ position: 'relative', paddingBottom: i < journeyEvents.length - 1 ? 20 : 0 }}>
-                        {/* Dot */}
                         <div style={{
                           position: 'absolute', left: -28, top: 2,
                           width: 16, height: 16, borderRadius: '50%',
@@ -305,7 +316,7 @@ export default function TrackPage() {
                         </div>
                         <div>
                           <p style={{ fontSize: 13, fontWeight: ev.current ? 700 : 500, color: ev.done ? TXT : ev.current ? NAV : '#9CA3AF', margin: 0 }}>{ev.title}</p>
-                          {ev.sub && <p style={{ fontSize: 11, color: '#9CA3AF', margin: '2px 0 0' }}>{ev.sub}</p>}
+                          {ev.sub && <p style={{ fontSize: 11, color: '#6B7280', margin: '2px 0 0' }}>{ev.sub}</p>}
                           {ev.current && <p style={{ fontSize: 11, fontWeight: 700, color: NAV, margin: '3px 0 0' }}>In progress</p>}
                         </div>
                       </div>
@@ -320,15 +331,40 @@ export default function TrackPage() {
                 {/* Official status message */}
                 <div style={{ background: '#fff', border: `1px solid ${BDR}`, borderLeft: `4px solid ${NAV}`, borderRadius: 14, padding: '20px 22px', boxShadow: '0 2px 12px rgba(0,0,0,0.04)' }}>
                   <p style={{ fontSize: 10, fontWeight: 700, color: '#9CA3AF', letterSpacing: 2, textTransform: 'uppercase', margin: '0 0 10px' }}>Latest Official Update</p>
-                  <p style={{ fontSize: 13, color: TXT, lineHeight: 1.65, margin: '0 0 12px', fontStyle: 'italic' }}>
-                    {complaint.status === 'resolved'
-                      ? '"Complaint successfully resolved. Issue has been addressed by the responsible authority."'
-                      : '"Complaint received and assigned. Field officer has been notified for inspection."'
-                    }
-                  </p>
-                  <p style={{ fontSize: 10, color: '#9CA3AF', margin: 0 }}>
-                    {STAGES[Math.min(escLevel,4)-1]?.label} · {daysOld === 0 ? 'Today' : `${daysOld}d ago`}
-                  </p>
+                  {complaint.officer_notes && complaint.officer_notes.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {[...complaint.officer_notes].reverse().slice(0, 3).map((note, i) => (
+                        <div key={i} style={{ borderLeft: `3px solid ${i === 0 ? NAV : BDR}`, paddingLeft: 10 }}>
+                          <p style={{ fontSize: 13, color: i === 0 ? TXT : '#6B7280', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>
+                            &ldquo;{note.replace(/^\[.*?\]\s*/, '')}&rdquo;
+                          </p>
+                          {note.match(/^\[(.+?)\]/) && (
+                            <p style={{ fontSize: 10, color: '#9CA3AF', margin: '3px 0 0' }}>
+                              {note.match(/^\[(.+?)\]/)?.[1]} · {STAGES[Math.min(escLevel,4)-1]?.label}
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.65, margin: '0 0 12px', fontStyle: 'italic' }}>
+                      {complaint.status === 'resolved'
+                        ? '"Complaint successfully resolved. Issue has been addressed by the responsible authority."'
+                        : '"Complaint received and assigned. Field officer has been notified for inspection."'
+                      }
+                    </p>
+                  )}
+                  {complaint.referred_to && (
+                    <p style={{ fontSize: 11, color: NAV, fontWeight: 600, margin: '10px 0 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <svg width="11" height="11" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                      Referred to: {complaint.referred_to}
+                    </p>
+                  )}
+                  {(!complaint.officer_notes || complaint.officer_notes.length === 0) && (
+                    <p style={{ fontSize: 10, color: '#9CA3AF', margin: '8px 0 0' }}>
+                      {STAGES[Math.min(escLevel,4)-1]?.label} · {daysOld === 0 ? 'Today' : `${daysOld}d ago`}
+                    </p>
+                  )}
                 </div>
 
                 {/* Citizen confidence panel */}

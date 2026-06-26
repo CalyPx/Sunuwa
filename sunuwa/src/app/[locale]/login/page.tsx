@@ -4,6 +4,8 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Link } from '@/i18n/navigation'
 import { supabase } from '@/lib/supabase'
+import SunuwaLogo from '@/components/SunuwaLogo'
+import LangToggle from '@/components/LangToggle'
 
 // ── Nepal silhouette (subtle background) ─────────────────────────────
 const NEPAL_PATH =
@@ -82,17 +84,10 @@ export default function LoginPage() {
             <div>
               {/* Nepal flag mark */}
               <div className="flex items-center gap-3 mb-10">
-                <div className="flex flex-shrink-0">
-                  <div className="w-1.5 h-12" style={{ background: CRIMSON }} />
-                  <div className="w-1.5 h-12 ml-0.5" style={{ background: '#003893' }} />
-                  <div className="w-12 h-12 ml-2 flex items-center justify-center font-bold text-white text-xl"
-                    style={{ background: 'rgba(255,255,255,0.1)', border: '1.5px solid rgba(255,255,255,0.2)' }}>
-                    स
-                  </div>
-                </div>
+                <SunuwaLogo size={48} light={true} />
                 <div>
                   <div className="font-bold text-white text-2xl leading-none"
-                    style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</div>
+                    style={{ fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</div>
                   <div className="text-white/40 text-[10px] uppercase tracking-[0.2em] mt-1">Civic Intelligence Platform</div>
                 </div>
               </div>
@@ -164,22 +159,20 @@ export default function LoginPage() {
           <div className="flex items-center justify-between px-8 md:px-12 py-5 border-b border-gray-100">
             {/* Mobile brand (visible only on small screens) */}
             <div className="flex lg:hidden items-center gap-2">
-              <div className="flex">
-                <div className="w-1 h-7" style={{ background: CRIMSON }} />
-                <div className="w-1 h-7 ml-0.5" style={{ background: '#003893' }} />
-                <div className="w-7 h-7 ml-1.5 flex items-center justify-center font-bold text-sm"
-                  style={{ background: GOV_BLUE, color: 'white' }}>स</div>
-              </div>
-              <span className="font-bold text-sm" style={{ color: GOV_BLUE, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवाइ</span>
+              <SunuwaLogo size={96} light={false} />
+              <span className="font-bold text-sm" style={{ color: GOV_BLUE, fontFamily: 'Noto Sans Devanagari, sans-serif' }}>सुनुवा</span>
             </div>
             <div className="hidden lg:block" />
-            <Link href="/"
-              className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1.5">
-              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-              </svg>
-              Back to Public Portal
-            </Link>
+            <div className="flex items-center gap-3">
+              <LangToggle dark={false} />
+              <Link href="/"
+                className="text-xs font-medium text-gray-400 hover:text-gray-700 transition-colors flex items-center gap-1.5">
+                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Public Portal
+              </Link>
+            </div>
           </div>
 
           {/* Login form area */}

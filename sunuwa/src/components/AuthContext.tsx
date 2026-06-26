@@ -2,108 +2,97 @@
 
 import {
   createContext, useContext, useEffect, useState,
-  useCallback, useRef, type ReactNode,
+  useCallback, type ReactNode,
 } from 'react'
-import { supabase } from '@/lib/supabase'
-import type { User } from '@supabase/supabase-js'
 import AuthModal from '@/components/AuthModal'
+
+const SESSION_KEY  = 'sunuwa_citizen_session'
+const SESSION_TTL  = 24 * 60 * 60 * 1000   // 24 hours
 
 // ── Types ──────────────────────────────────────────────────────────────────
 export interface Citizen {
-  id: string
   phone_number: string
-  created_at: string
-  ward_number: number | null
+  authenticated: boolean
+  expiresAt: number
+}
+
+interface StoredSession {
+  phone_number: string
+  expiresAt: number
 }
 
 interface AuthContextValue {
-  user:      User | null
   citizen:   Citizen | null
   loading:   boolean
   authOpen:  boolean
   openAuth:  () => void
   closeAuth: () => void
-  signOut:   () => Promise<void>
+  signOut:   () => void
 }
 
 // ── Context ────────────────────────────────────────────────────────────────
 const AuthContext = createContext<AuthContextValue>({
-  user:      null,
   citizen:   null,
   loading:   true,
   authOpen:  false,
   openAuth:  () => {},
   closeAuth: () => {},
-  signOut:   async () => {},
+  signOut:   () => {},
 })
 
 export function useAuth() {
   return useContext(AuthContext)
 }
 
+// ── Helpers ────────────────────────────────────────────────────────────────
+function readSession(): Citizen | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = localStorage.getItem(SESSION_KEY)
+    if (!raw) return null
+    const s: StoredSession = JSON.parse(raw)
+    if (Date.now() > s.expiresAt) {
+      localStorage.removeItem(SESSION_KEY)
+      return null
+    }
+    return { phone_number: s.phone_number, authenticated: true, expiresAt: s.expiresAt }
+  } catch {
+    return null
+  }
+}
+
+export function writeSession(phone: string): Citizen {
+  const expiresAt = Date.now() + SESSION_TTL
+  const session: StoredSession = { phone_number: phone, expiresAt }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session))
+  return { phone_number: phone, authenticated: true, expiresAt }
+}
+
 // ── Provider ───────────────────────────────────────────────────────────────
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user,     setUser]     = useState<User | null>(null)
   const [citizen,  setCitizen]  = useState<Citizen | null>(null)
   const [loading,  setLoading]  = useState(true)
   const [authOpen, setAuthOpen] = useState(false)
-  const mounted = useRef(true)
-
-  const fetchCitizen = useCallback(async (uid: string) => {
-    const { data } = await supabase.from('citizens').select('*').eq('id', uid).single()
-    if (mounted.current) setCitizen(data ?? null)
-  }, [])
-
-  const upsertCitizen = useCallback(async (u: User) => {
-    await supabase.from('citizens').upsert(
-      { id: u.id, phone_number: u.phone ?? '' },
-      { onConflict: 'id', ignoreDuplicates: false }
-    )
-    await fetchCitizen(u.id)
-  }, [fetchCitizen])
 
   useEffect(() => {
-    mounted.current = true
+    setCitizen(readSession())
+    setLoading(false)
+  }, [])
 
-    // Restore existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!mounted.current) return
-      const u = session?.user ?? null
-      setUser(u)
-      if (u) upsertCitizen(u)
-      setLoading(false)
-    })
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (!mounted.current) return
-        const u = session?.user ?? null
-        setUser(u)
-        if (u) {
-          await upsertCitizen(u)
-          setAuthOpen(false)   // close modal on successful login
-        } else {
-          setCitizen(null)
-        }
-      }
-    )
-
-    return () => {
-      mounted.current = false
-      subscription.unsubscribe()
-    }
-  }, [upsertCitizen])
-
-  const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
-    setUser(null)
+  const signOut = useCallback(() => {
+    localStorage.removeItem(SESSION_KEY)
     setCitizen(null)
+  }, [])
+
+  const handleSuccess = useCallback((phone: string) => {
+    const c = writeSession(phone)
+    setCitizen(c)
+    setAuthOpen(false)
   }, [])
 
   return (
     <AuthContext.Provider value={{
-      user, citizen, loading,
+      citizen, loading,
       authOpen,
       openAuth:  () => setAuthOpen(true),
       closeAuth: () => setAuthOpen(false),
@@ -113,7 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {authOpen && (
         <AuthModal
           onClose={() => setAuthOpen(false)}
-          onSuccess={() => setAuthOpen(false)}
+          onSuccess={handleSuccess}
         />
       )}
     </AuthContext.Provider>
