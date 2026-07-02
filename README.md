@@ -178,7 +178,7 @@ Built by three 18-year-old developers passionate about civic technology in Nepal
 |------|------|
 | **Rohit Poudel** | Team Lead / Product & AI Integration |
 | **Pujan Bhatt** | Full Stack / System Design |
-| **Sudarshan Subedi** | Frontend / UI-UX |
+| **Garima Basnet** | Frontend / UI-UX |
 
 ---
 
