@@ -19,7 +19,9 @@
 
 ## 📖 About
 
-In Nepal, citizens face real problems with public services but have no clear way to report them. Most people post complaints on social media hoping someone notices, or visit government offices repeatedly without getting answers. Their voices end up scattered across Facebook, informal conversations, and unread posts.
+When something goes wrong in Nepal, most people do one of two things: post about it on Facebook and hope it goes viral enough for someone to notice, or visit the ward office again and again and come back with nothing. A broken streetlight, a water shortage, an unfair fee — the complaint gets shouted into the void and then forgotten.
+
+Citizens face real problems with public services but have no clear way to report them. Their voices end up scattered across social media, informal conversations, and unread posts — impossible for any official to act on even if they wanted to.
 
 **Sunuwa** is a platform that fixes this. It gives citizens one simple place to report problems — in Nepali or English, in under a minute — and then it actually does something with each complaint instead of letting it disappear.
 
@@ -31,7 +33,9 @@ Complaints are automatically classified, routed to the correct government office
 
 ## 💡 What Inspired This
 
-After the Grade 12 (NEB) results were published in June 2026, social media was flooded with thousands of student complaints about retake fees, result quality, and other issues. Thousands of voices — but no organized way for their concerns to reach the people in charge.
+On **June 19, 2026**, Nepal's National Examination Board published the Grade 12 results — rushed out in 40 days instead of the usual 70–90. The faster timeline came at a cost: expanded examiner pools with reduced training led to a spike in evaluation errors. Within days, **over 32,000 students applied for re-totaling**, each paying **Rs. 1,000 per subject** to correct mistakes made during the board's own marking. Social media erupted with students and parents calling the fees unfair and the grading unreliable.
+
+Thousands of angry voices — but no organized way for any of it to reach the people who could act. The complaints lived and died in Facebook comment sections.
 
 The problem wasn't that authorities didn't care. It was that there was no system to **collect, organize, and present** citizen feedback in a way decision-makers could act on. Sunuwa was born from that gap.
 
